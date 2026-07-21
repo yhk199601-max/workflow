@@ -404,6 +404,8 @@ td.nx .none { color: #c2b8ae; font-size: 11px; }
         <input id="dealSearch" type="search" placeholder="업체명·모델·응용·비고 검색" />
         <select id="dealSort">
           <option value="quote_desc">견적일 최신순</option>
+          <option value="touch_desc">최근 기록순</option>
+          <option value="touch_asc">오래 방치된 순</option>
           <option value="quote_asc">견적일 오래된순</option>
           <option value="amt_desc">금액 높은순</option>
           <option value="next_asc">다음 행동 임박순</option>
@@ -414,7 +416,7 @@ td.nx .none { color: #c2b8ae; font-size: 11px; }
       <div class="pipe-sum" id="pipeSum"></div>
       <table class="pipe">
         <thead><tr>
-          <th>상태</th><th>업체명</th><th>모델</th><th style="text-align:right">금액</th><th>견적일</th><th>다음 행동</th><th>수주 진행</th>
+          <th>상태</th><th>업체명</th><th>모델</th><th style="text-align:right">금액</th><th>견적일</th><th>최근 기록</th><th>다음 행동</th><th>수주 진행</th>
         </tr></thead>
         <tbody id="pipeBody"></tbody>
       </table>
@@ -707,6 +709,26 @@ if(!canStore) $('storageNote').classList.add('show');
 
 /* ═══ 판단 로직 ═══ */
 const isActive = d => ACTIVE.includes(d.status);
+const lastTouch = d => Math.max(...(d.notes||[]).map(n=>Number(n.t)||0), Number(d.statusAt)||0, Number(d.createdAt)||0);
+function fmtAgo(ts){
+  if(!ts) return {label:'-', days:9999};
+  const days=Math.floor((Date.now()-ts)/86400000);
+  let label;
+  if(days<=0) label='오늘';
+  else if(days===1) label='어제';
+  else if(days<7) label=`${days}일 전`;
+  else if(days<30) label=`${Math.floor(days/7)}주 전`;
+  else if(days<365) label=`${Math.floor(days/30)}개월 전`;
+  else label=`${Math.floor(days/365)}년 전`;
+  return {label, days};
+}
+function touchCell(d){
+  const a=fmtAgo(lastTouch(d));
+  const color=a.days<=7?'var(--green)':(a.days>=30?'#946425':'var(--muted)');
+  const dt=new Date(lastTouch(d));
+  const dstr=`${String(dt.getFullYear()).slice(2)}.${String(dt.getMonth()+1).padStart(2,'0')}.${String(dt.getDate()).padStart(2,'0')}`;
+  return `<span style="color:${color};font-weight:700">${a.label}</span> <span style="color:var(--muted);font-size:10px">${dstr}</span>`;
+}
 const dealAmt = d => Number(d.wonAmt) || Number(d.amt) || 0;
 const balance = d => (Number(d.wonAmt)||0) - (Number(d.paidAmt)||0);
 const isLate = d => isActive(d) && d.nextDate && dday(d.nextDate) < 0;
@@ -869,6 +891,8 @@ function renderDeals(){
     if(sort==='quote_desc') return (b.quoteDate||'').localeCompare(a.quoteDate||'');
     if(sort==='quote_asc') return (a.quoteDate||'').localeCompare(b.quoteDate||'');
     if(sort==='amt_desc') return dealAmt(b)-dealAmt(a);
+    if(sort==='touch_desc') return lastTouch(b)-lastTouch(a);
+    if(sort==='touch_asc') return lastTouch(a)-lastTouch(b);
     return (a.nextDate||'9999').localeCompare(b.nextDate||'9999');
   });
   const sum = list.reduce((s,d)=>s+dealAmt(d),0);
@@ -882,16 +906,17 @@ function renderDeals(){
       <td>${esc(d.model||'-')}${d.qty>1?` <span class="sub" style="display:inline">×${d.qty}</span>`:''}</td>
       <td class="amt">${amtDisp}</td>
       <td class="dt">${fmtDate(d.quoteDate)}</td>
+      <td class="dt" style="font-family:var(--sans)">${touchCell(d)}</td>
       <td class="nx">${d.next||d.nextDate?`<span class="t">${esc(d.next||'-')}</span> ${ddayChip(d.nextDate)}`:`<span class="none">미등록</span>`}</td>
       <td>${wonProgHtml(d)}</td>
     </tr>`;
-  }).join('') || `<tr><td colspan="7"><div class="empty">조건에 맞는 영업 건이 없습니다.</div></td></tr>`;
+  }).join('') || `<tr><td colspan="8"><div class="empty">조건에 맞는 영업 건이 없습니다.</div></td></tr>`;
 
   $('pipeCards').innerHTML = list.map(d=>{
     const amtDisp = d.amt ? fmtMoney(dealAmt(d)) : (d.amtText||'-');
     return `<div class="pcard ${isLate(d)?'late':''}" data-deal="${d.id}">
       <div class="r1"><span class="co">${esc(d.co)}</span><span class="badge b-${d.status}">${d.status}</span></div>
-      <div class="r2"><span>${esc(d.model||'-')}${d.qty>1?` ×${d.qty}`:''}</span><span class="amt">${amtDisp}</span><span>${fmtDate(d.quoteDate)}</span></div>
+      <div class="r2"><span>${esc(d.model||'-')}${d.qty>1?` ×${d.qty}`:''}</span><span class="amt">${amtDisp}</span><span>${fmtDate(d.quoteDate)}</span><span>기록 ${touchCell(d)}</span></div>
       ${d.status==='수주'?`<div class="r2">${wonProgHtml(d)}</div>`:''}
       ${d.next||d.nextDate?`<div class="nx ${isLate(d)?'late-t':''}">▸ ${esc(d.next||'다음 행동')} ${ddayChip(d.nextDate)}</div>`:''}
     </div>`;
