@@ -290,6 +290,33 @@ td.nx .none { color: #c2b8ae; font-size: 11px; }
 .mfab { display: none; position: fixed; right: 16px; bottom: 84px; width: 58px; height: 58px; border-radius: 50%; background: var(--primary); color: #fff; font-size: 28px; font-weight: 700; border: 0; box-shadow: 0 10px 26px rgba(120,91,81,.45); z-index: 80; }
 .mfab:active { transform: scale(.94); }
 @media (max-width: 720px) { .mfab { display: grid; place-items: center; } }
+/* ── 업무 추적 리디자인 ── */
+.task-item { padding: 13px 16px; gap: 13px; border-radius: 16px; }
+.tk-date { flex-shrink: 0; width: 58px; text-align: center; border-radius: 12px; padding: 7px 2px 6px; background: var(--panel-2); display: grid; gap: 1px; }
+.tk-date .m { font-weight: 800; font-size: 14px; letter-spacing: -.02em; color: var(--text); }
+.tk-date .dd { font-family: var(--mono); font-size: 9.5px; color: var(--muted); font-weight: 700; }
+.tk-date.today { background: var(--amber-soft); }
+.tk-date.today .m, .tk-date.today .dd { color: #946425; }
+.tk-date.over { background: var(--red); }
+.tk-date.over .m, .tk-date.over .dd { color: #fff; }
+.tk-date.none { background: #fff; border: 1.5px dashed var(--line); }
+.tk-date.none .m, .tk-date.none .dd { color: #c2b8ae; }
+.tk-title { font-size: 15px; font-weight: 650; }
+.tk-meta { margin-top: 5px; gap: 8px; font-size: 11px; }
+.star-btn { border: 0; background: none; font-size: 21px; color: #d8cec5; padding: 2px 4px; flex-shrink: 0; line-height: 1; cursor: pointer; }
+.star-btn.on { color: #e0a63c; text-shadow: 0 1px 4px rgba(224,166,60,.35); }
+.tgroup { margin-bottom: 26px; }
+.tgroup-hd { font-size: 15px; margin-bottom: 10px; padding-bottom: 7px; border-bottom: 2px solid var(--line); }
+.tgroup.imp .tgroup-hd { color: #9a7716; border-color: #ecd9a8; }
+.tgroup.imp .task-item { border-left: 4px solid #e0a63c; background: #fffdf6; }
+.done-date { font-family: var(--mono); font-size: 11px; font-weight: 700; color: var(--muted); margin: 18px 0 9px; display: flex; align-items: center; gap: 8px; }
+.done-date:first-child { margin-top: 4px; }
+.done-date b { color: var(--text); font-size: 12px; }
+.done-date::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+.task-item.compact { padding: 9px 14px; border-radius: 12px; box-shadow: none; gap: 11px; }
+.task-item.compact .tk-title { font-size: 13px; font-weight: 500; }
+.task-item.compact .tk-check { width: 20px; height: 20px; border-radius: 7px; font-size: 11px; }
+@media (max-width: 720px) { .tk-date { width: 50px; } .tk-title { font-size: 14px; } }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 </style>
 </head>
@@ -388,7 +415,7 @@ td.nx .none { color: #c2b8ae; font-size: 11px; }
 
       <div class="content-grid equal">
         <article class="panel">
-          <div class="panel-head"><div><p class="eyebrow">TODAY</p><h2>오늘 마감 업무</h2></div><button class="text-btn" data-go="tasks">업무 보기 →</button></div>
+          <div class="panel-head"><div><p class="eyebrow">TODAY</p><h2>중요 · 오늘 마감 업무</h2></div><button class="text-btn" data-go="tasks">업무 보기 →</button></div>
           <div id="todayTaskList" class="list"></div>
         </article>
         <article class="panel">
@@ -599,6 +626,10 @@ td.nx .none { color: #c2b8ae; font-size: 11px; }
         </span>
       </label>
       <label>유형<select id="t_cat"><option>영업</option><option>서류</option><option>출고·납품</option><option>고객 대응</option><option>사내 업무</option><option>기타</option></select></label>
+      <label>중요도<select id="t_priority">
+        <option value="normal">보통</option>
+        <option value="high">⭐ 중요 (항상 상단 고정)</option>
+      </select></label>
       <label>반복<select id="t_repeat">
         <option value="none">반복 안 함</option>
         <option value="daily">매일</option>
@@ -662,7 +693,7 @@ function maybeSpawnRepeat(t){
   if(!t.repeat || t.repeat==='none' || t.nextSpawned || !fullyDone(t)) return;
   t.nextSpawned=true;
   const nd=nextDue(t.due,t.repeat);
-  state.tasks.push({ id:uid('task'), title:t.title, due:nd, cat:t.cat, handTo:t.handTo, dealId:t.dealId, memo:t.memo, repeat:t.repeat, nextSpawned:false, done:false, handedOver:false, postponed:0, createdAt:Date.now() });
+  state.tasks.push({ id:uid('task'), title:t.title, due:nd, cat:t.cat, handTo:t.handTo, dealId:t.dealId, memo:t.memo, repeat:t.repeat, priority:t.priority||'normal', nextSpawned:false, done:false, handedOver:false, postponed:0, createdAt:Date.now() });
   toast(`🔁 다음 반복 업무를 ${fmtDate(nd)}에 등록했어요.`);
 }
 function dday(iso){ if(!iso) return null; return Math.round((new Date(iso+'T00:00:00') - new Date(isoToday()+'T00:00:00'))/86400000); }
@@ -864,8 +895,10 @@ function renderDashboard(){
     ? shown.map((a,i)=>`<div class="attention-item ${a.lv}" data-att="${i}"><strong>${esc(a.t)}</strong><span>${a.s}</span></div>`).join('') + (att.length>cap?`<div class="empty">외 ${att.length-cap}건 — 영업·업무 화면에서 확인하세요</div>`:'')
     : `<div class="empty">현재 긴급 경고가 없습니다. 🎉</div>`;
 
-  const todayTasks = state.tasks.filter(t=>!fullyDone(t) && t.due && dday(t.due)<=0).sort((a,b)=>(a.due||'').localeCompare(b.due||''));
-  $('todayTaskList').innerHTML = todayTasks.length ? todayTasks.map(t=>`<div class="list-item" data-taskgo="${t.id}"><strong>${esc(t.title)}</strong><span>${taskOverdue(t)?'⚠️ 기한 초과 · ':''}기한 ${fmtDate(t.due)} · ${t.cat}</span></div>`).join('') : `<div class="empty">오늘 마감 업무가 없습니다.</div>`;
+  const impTasks = state.tasks.filter(t=>!fullyDone(t) && t.priority==='high');
+  const todayTasks = state.tasks.filter(t=>!fullyDone(t) && t.priority!=='high' && t.due && dday(t.due)<=0).sort((a,b)=>(a.due||'').localeCompare(b.due||''));
+  const dashList = [...impTasks, ...todayTasks];
+  $('todayTaskList').innerHTML = dashList.length ? dashList.map(t=>`<div class="list-item" data-taskgo="${t.id}"><strong>${t.priority==='high'?'⭐ ':''}${esc(t.title)}</strong><span>${t.priority==='high'?'중요 업무 · ':''}${taskOverdue(t)?'⚠️ 기한 초과 · ':''}기한 ${t.due?fmtDate(t.due):'없음'} · ${t.cat}</span></div>`).join('') : `<div class="empty">중요 업무·오늘 마감 업무가 없습니다.</div>`;
   const hoAll = state.tasks.filter(t=>t.handTo && !t.handedOver);
   $('handoffList').innerHTML = hoAll.length ? hoAll.map(t=>`<div class="list-item" data-taskgo="${t.id}"><strong>${esc(t.title)}</strong><span>→ ${esc(t.handTo)}${t.done?' · 업무는 완료됨, 인계만 남음':''}</span></div>`).join('') : `<div class="empty">인수인계 미완료 업무가 없습니다.</div>`;
 }
@@ -1030,6 +1063,12 @@ function deleteDeal(){
 
 /* ═══ 업무 추적 ═══ */
 let editingTaskId=null;
+function dayLabel(iso){
+  if(iso===isoToday()) return '오늘';
+  if(iso===addDaysIso(isoToday(),-1)) return '어제';
+  const dt=new Date(iso+'T00:00:00');
+  return `${dt.getMonth()+1}.${dt.getDate()} (${['일','월','화','수','목','금','토'][dt.getDay()]})`;
+}
 function renderTasks(){
   const q=($('taskSearch').value||'').trim().toLowerCase();
   const cat=$('taskCatFilter').value;
@@ -1040,37 +1079,72 @@ function renderTasks(){
     if(cat!=='all' && t.cat!==cat) return false;
     return true;
   }).sort((a,b)=>(a.due||'9999').localeCompare(b.due||'9999'));
-  const g={ late:[], today:[], future:[], nodate:[] };
+  const g={ imp:[], late:[], today:[], future:[], nodate:[] };
   list.forEach(t=>{
-    if(taskOverdue(t)) g.late.push(t);
+    if(t.priority==='high') g.imp.push(t);
+    else if(taskOverdue(t)) g.late.push(t);
     else if(t.due && dday(t.due)===0) g.today.push(t);
     else if(t.due) g.future.push(t);
     else g.nodate.push(t);
   });
-  const grp=(cls,icon,name,arr)=> arr.length?`<div class="tgroup ${cls}"><div class="tgroup-hd">${icon} ${name}<span class="n">${arr.length}</span></div>${arr.map(taskHtml).join('')}</div>`:'';
-  const html = grp('late','🔴','기한 초과 — 먼저 처리하세요',g.late) + grp('today','🟡','오늘 마감',g.today) + grp('','🗓','예정된 업무',g.future) + grp('nodate','⚠️','기한 없음 — 미루기의 시작! 기한을 정해주세요',g.nodate);
+  const grp=(cls,icon,name,arr)=> arr.length?`<div class="tgroup ${cls}"><div class="tgroup-hd">${icon} ${name}<span class="n">${arr.length}</span></div>${arr.map(t=>taskHtml(t)).join('')}</div>`:'';
+  const html = grp('imp','⭐','중요 업무 — 항상 위에 표시',g.imp)
+    + grp('late','🔴','기한 초과 — 먼저 처리하세요',g.late)
+    + grp('today','🟡','오늘 마감',g.today)
+    + grp('','🗓','예정된 업무',g.future)
+    + grp('nodate','⚠️','기한 없음 — 미루기의 시작! 기한을 정해주세요',g.nodate);
   $('taskGroups').innerHTML = html || `<div class="panel"><div class="empty">진행 중인 업무가 없습니다. 상단에서 추가해 보세요.</div></div>`;
-  const done=state.tasks.filter(fullyDone).sort((a,b)=>(b.doneAt||0)-(a.doneAt||0)).slice(0,30);
-  $('doneCount').textContent=`${state.tasks.filter(fullyDone).length}건`;
-  $('taskDoneList').innerHTML = done.length? done.map(taskHtml).join('') : `<div class="empty">아직 없습니다. 오늘의 첫 완료를 만들어 보세요 💪</div>`;
+
+  const done=state.tasks.filter(fullyDone).sort((a,b)=>(b.doneAt||0)-(a.doneAt||0));
+  $('doneCount').textContent=`${done.length}건`;
+  if(!done.length){ $('taskDoneList').innerHTML=`<div class="empty">아직 없습니다. 오늘의 첫 완료를 만들어 보세요 💪</div>`; return; }
+  const byDate={}; const order=[];
+  done.slice(0,60).forEach(t=>{
+    const dt=t.doneAt?new Date(t.doneAt):null;
+    const key=dt?`${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`:'unknown';
+    if(!byDate[key]){ byDate[key]=[]; order.push(key); }
+    byDate[key].push(t);
+  });
+  $('taskDoneList').innerHTML = order.map(key=>{
+    const label = key==='unknown'?'날짜 미상':dayLabel(key);
+    return `<div class="done-date"><b>${label}</b><span>${byDate[key].length}건 완료</span></div>` + byDate[key].map(t=>taskHtml(t,true)).join('');
+  }).join('') + (done.length>60?`<div class="empty">외 ${done.length-60}건 (최근 60건까지 표시)</div>`:'');
 }
-function taskHtml(t){
+function dateBlock(t){
+  if(!t.due) return `<div class="tk-date none"><span class="m">기한</span><span class="dd">없음</span></div>`;
+  const [y,m,dd]=t.due.split('-');
+  const n=dday(t.due);
+  const cls=(!t.done&&n<0)?'over':(n===0?'today':'');
+  const dtxt=n<0?`D+${-n}`:(n===0?'D-DAY':`D-${n}`);
+  return `<div class="tk-date ${cls}"><span class="m">${Number(m)}/${Number(dd)}</span><span class="dd">${dtxt}</span></div>`;
+}
+function taskHtml(t, compact){
   const deal=state.deals.find(d=>d.id===t.dealId);
-  const od=taskOverdue(t);
-  return `<article class="task-item ${fullyDone(t)?'done':''}">
+  if(compact){
+    return `<article class="task-item done compact">
+      <button class="tk-check c1" data-tdone="${t.id}" aria-label="완료 취소">✓</button>
+      <div class="tk-body" data-tedit="${t.id}">
+        <div class="tk-title">${esc(t.title)}</div>
+        <div class="tk-meta"><span>${t.cat}</span>${deal?`<span>${esc(deal.co)}</span>`:''}${t.handTo?`<span>인계: ${esc(t.handTo)} ✓</span>`:''}</div>
+      </div>
+      <button class="tk-del" data-tdel="${t.id}">✕</button>
+    </article>`;
+  }
+  return `<article class="task-item">
     <button class="tk-check ${t.done?'c1':''}" data-tdone="${t.id}" aria-label="완료 처리">${t.done?'✓':''}</button>
+    ${dateBlock(t)}
     <div class="tk-body" data-tedit="${t.id}">
       <div class="tk-title">${esc(t.title)}</div>
       <div class="tk-meta">
-        ${t.due?`<span class="tk-due ${od?'red':''}">기한 ${fmtDate(t.due)}</span>${ddayChip(t.due)}`:''}
         <span>${t.cat}</span>
         ${deal?`<span>연결: ${esc(deal.co)}</span>`:''}
-        ${t.done&&t.handTo&&!t.handedOver?`<span class="dchip amber">인수인계 대기</span>`:''}
         ${t.repeat&&t.repeat!=='none'?`<span class="repeat-chip">🔁 ${REPEAT_LABEL[t.repeat]}</span>`:''}
         ${t.postponed?`<span class="postpone-chip ${t.postponed>=2?'hot':''}">⏳ ${t.postponed}번 미룸</span>`:''}
+        ${t.done&&t.handTo&&!t.handedOver?`<span class="dchip amber">인수인계 대기</span>`:''}
         ${!t.due&&!t.done?`<button class="setdue-btn" data-setdue="${t.id}|0">기한: 오늘로</button><button class="setdue-btn" data-setdue="${t.id}|1">내일로</button>`:''}
       </div>
     </div>
+    <button class="star-btn ${t.priority==='high'?'on':''}" data-tstar="${t.id}" title="중요 표시">${t.priority==='high'?'★':'☆'}</button>
     ${t.handTo?`<button class="ho-btn ${t.handedOver?'done':''}" data-tho="${t.id}">${t.handedOver?'✓ 인계 완료':`인수인계<br>${esc(t.handTo)}`}</button>`:''}
     <button class="tk-del" data-tdel="${t.id}">✕</button>
   </article>`;
@@ -1080,13 +1154,13 @@ function openTaskModal(id, preset){
   const t=id?state.tasks.find(x=>x.id===id):{title:preset?.title||'', due:isoToday(), cat:'영업', handTo:'', dealId:'', memo:preset?.memo||''};
   $('taskDialogTitle').textContent=id?'업무 수정':'업무 추가';
   $('t_title').value=t.title; $('t_due').value=t.due||''; $('t_cat').value=t.cat||'영업';
-  $('t_handTo').value=t.handTo||''; $('t_repeat').value=t.repeat||'none'; setPickerDeal(t.dealId||''); $('t_memo').value=t.memo||'';
+  $('t_handTo').value=t.handTo||''; $('t_repeat').value=t.repeat||'none'; $('t_priority').value=t.priority||'normal'; setPickerDeal(t.dealId||''); $('t_memo').value=t.memo||'';
   $('taskOverlay').classList.add('on');
 }
 function saveTask(){
   const title=$('t_title').value.trim();
   if(!title) return toast('업무명을 입력해 주세요.');
-  const data={ title, due:$('t_due').value, cat:$('t_cat').value, handTo:$('t_handTo').value.trim(), dealId:pickerDealId, memo:$('t_memo').value.trim(), repeat:$('t_repeat').value };
+  const data={ title, due:$('t_due').value, cat:$('t_cat').value, handTo:$('t_handTo').value.trim(), dealId:pickerDealId, memo:$('t_memo').value.trim(), repeat:$('t_repeat').value, priority:$('t_priority').value };
   if(editingTaskId){
     const old=state.tasks.find(x=>x.id===editingTaskId);
     if(old.repeat!==data.repeat) old.nextSpawned=false;
@@ -1175,7 +1249,7 @@ function bindEvents(){
   $('resetBtn').onclick=()=>{ if(confirm('정말 모든 데이터를 초기화할까요?')&&confirm('마지막 확인입니다. 되돌릴 수 없습니다!')){ state=defaultData(); state.deals=[]; saveData('초기화했습니다.'); } };
 
   document.addEventListener('click',e=>{
-    const el=e.target.closest('[data-close],[data-go],[data-deal],[data-dfilter],[data-att],[data-taskgo],[data-stagego],[data-tdone],[data-tho],[data-tdel],[data-tedit],[data-inboxtask],[data-inboxdel],[data-duechip],[data-setdue],[data-pickdeal]');
+    const el=e.target.closest('[data-close],[data-go],[data-deal],[data-dfilter],[data-att],[data-taskgo],[data-stagego],[data-tdone],[data-tho],[data-tdel],[data-tedit],[data-inboxtask],[data-inboxdel],[data-duechip],[data-setdue],[data-pickdeal],[data-tstar]');
     if(!el) return;
     const ds=el.dataset;
     if(ds.close){ $(ds.close).classList.remove('on'); return; }
@@ -1204,6 +1278,8 @@ function bindEvents(){
       return;
     }
     if(ds.pickdeal){ setPickerDeal(ds.pickdeal); return; }
+    if(ds.tstar){ const t=state.tasks.find(x=>x.id===ds.tstar); t.priority=t.priority==='high'?'normal':'high';
+      saveData(t.priority==='high'?'⭐ 중요 업무로 고정했습니다.':'중요 표시를 해제했습니다.'); return; }
     if(ds.setdue){
       const [id,n]=ds.setdue.split('|');
       const t=state.tasks.find(x=>x.id===id); if(!t) return;
