@@ -317,6 +317,72 @@ td.nx .none { color: #c2b8ae; font-size: 11px; }
 .task-item.compact .tk-title { font-size: 13px; font-weight: 500; }
 .task-item.compact .tk-check { width: 20px; height: 20px; border-radius: 7px; font-size: 11px; }
 @media (max-width: 720px) { .tk-date { width: 50px; } .tk-title { font-size: 14px; } }
+/* ── 가독성·미감 개선 ── */
+body { font-size: 15.5px; }
+input, select, textarea { font-size: 15px; }
+table.pipe { font-size: 14px; }
+table.pipe td { padding: 12px 13px; }
+table.pipe th { font-size: 11px; }
+.badge { font-size: 12px; padding: 4px 11px; }
+.dchip { font-size: 11px; }
+.panel h2 { font-size: 20px; }
+.muted { font-size: 13px; }
+.metric strong { font-size: 28px; }
+.metric .label { font-size: 13px; }
+.metric small { font-size: 12.5px; }
+.stage-mini strong { font-size: 22px; }
+.stage-mini span { font-size: 12px; }
+.tk-title { font-size: 16px; }
+.tk-meta { font-size: 12px; }
+.tk-date .m { font-size: 15px; }
+.tk-date .dd { font-size: 10px; }
+.tgroup-hd { font-size: 16px; }
+.done-date { font-size: 12px; }
+.fbtn { font-size: 13px; padding: 8px 14px; }
+.pipe-sum { font-size: 13px; }
+.form-grid label { font-size: 12px; }
+.eod-grid label { font-size: 13px; }
+.guardrail li span { font-size: 12px; }
+.guardrail li strong { font-size: 13px; }
+.sidebar-tip p { font-size: 12px; }
+.inbox-item { font-size: 13px; }
+.list-item strong { font-size: 14.5px; }
+.list-item span { font-size: 12.5px; }
+td.co .sub { font-size: 12px; }
+.eyebrow { font-size: 11.5px; }
+.count-pill { font-size: 12px; }
+/* 주의 카드 리디자인 */
+.attention-item { display: flex; gap: 12px; align-items: flex-start; padding: 13px 14px; border-radius: 14px; }
+.ai-ic { flex-shrink: 0; width: 36px; height: 36px; border-radius: 12px; display: grid; place-items: center; }
+.attention-item.red .ai-ic { background: var(--red-soft); color: var(--red); }
+.attention-item.amber .ai-ic { background: var(--amber-soft); color: #946425; }
+.ai-tx { flex: 1; min-width: 0; }
+.ai-tx strong { font-size: 14.5px; }
+.ai-tx span { font-size: 12.5px; margin-top: 3px; }
+.ai-go { color: #cfc4ba; font-size: 20px; align-self: center; font-weight: 300; }
+/* 별·삭제 버튼 */
+.star-btn { display: grid; place-items: center; padding: 4px; border-radius: 10px; transition: .12s; }
+.star-btn:hover { background: #fdf6e6; }
+.star-btn.on svg { filter: drop-shadow(0 1px 3px rgba(224,166,60,.4)); }
+.tk-del { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 9px; color: #cfc4ba; transition: .12s; }
+.tk-del:hover { background: var(--red-soft); color: var(--red); }
+.nav-btn .ic { display: grid; place-items: center; width: 20px; }
+.nav-btn svg { flex-shrink: 0; }
+/* ── 모던 클린 카드 (왼쪽 색 띠 제거) ── */
+.attention-item.red, .attention-item.amber { border: 1px solid var(--line); border-left: 1px solid var(--line); background: #fff; }
+.attention-item:hover { border-color: #d8cfc6; box-shadow: 0 5px 16px rgba(72,57,48,.09); }
+.tgroup.late .task-item, .tgroup.today .task-item, .tgroup.imp .task-item, .tgroup.nodate .task-item {
+  border: 1px solid var(--line); border-left: 1px solid var(--line); background: #fff;
+}
+.task-item { transition: .13s; }
+.task-item:hover { border-color: #d8cfc6; box-shadow: 0 5px 16px rgba(72,57,48,.08); }
+.pcard.late { border: 1px solid #e6c6c1; border-left: 1px solid #e6c6c1; }
+.guardrail li { border-left: 0; padding-left: 0; grid-template-columns: 22px 1fr; display: grid; gap: 4px 10px; }
+.guardrail li strong { grid-column: 2; }
+.guardrail li span { grid-column: 2; }
+.guardrail li::before { content: counter(gr); counter-increment: gr; grid-column: 1; grid-row: 1 / span 2; width: 22px; height: 22px; border-radius: 8px; background: var(--panel-2); color: var(--primary); font-size: 11px; font-weight: 800; display: grid; place-items: center; margin-top: 1px; }
+.guardrail ol { counter-reset: gr; }
+.danger-panel { background: var(--panel); }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 </style>
 </head>
@@ -738,6 +804,22 @@ if(!state.targets) state.targets = {};
 if(state.target && !state.targets[new Date().getFullYear()]) state.targets[new Date().getFullYear()] = state.target;
 if(!canStore) $('storageNote').classList.add('show');
 
+/* ═══ SVG 아이콘 ═══ */
+const SVG = {
+  star: on => `<svg width="20" height="20" viewBox="0 0 24 24" fill="${on?'#e0a63c':'none'}" stroke="${on?'#e0a63c':'#c9beb4'}" stroke-width="1.7" stroke-linejoin="round"><path d="M12 2.8l2.8 5.7 6.3.9-4.6 4.4 1.1 6.3-5.6-3-5.6 3 1.1-6.3L2.9 9.4l6.3-.9z"/></svg>`,
+  x: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>`,
+  alert: `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.8L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.8a2 2 0 0 0-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`,
+  clock: `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>`,
+  won: `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6l3.2 12L9.5 8l3 10L15.7 6"/><line x1="2" y1="12" x2="20" y2="12"/><circle cx="20.5" cy="16.5" r="1" fill="currentColor" stroke="none"/></svg>`,
+  note: `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></svg>`,
+  hand: `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>`,
+  nav_dash: `<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>`,
+  nav_deal: `<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/></svg>`,
+  nav_task: `<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/><polyline points="8 12.5 11 15.5 16 9.5"/></svg>`,
+  nav_daily: `<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>`,
+  nav_set: `<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.9 2.9l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.2a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.9-2.9l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.2a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.9-2.9l.1.1a1.7 1.7 0 0 0 1.9.3h.1a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.2a1.7 1.7 0 0 0 1 1.5h.1a1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.9 2.9l-.1.1a1.7 1.7 0 0 0-.3 1.9v.1a1.7 1.7 0 0 0 1.5 1h.2a2 2 0 1 1 0 4h-.2a1.7 1.7 0 0 0-1.5 1z"/></svg>`
+};
+
 /* ═══ 판단 로직 ═══ */
 const isActive = d => ACTIVE.includes(d.status);
 const lastTouch = d => Math.max(...(d.notes||[]).map(n=>Number(n.t)||0), Number(d.statusAt)||0, Number(d.createdAt)||0);
@@ -790,7 +872,7 @@ function goView(view){
 }
 
 /* ═══ 전체 렌더 ═══ */
-let dealFilter = 'active';
+let dealFilter = 'all';
 function renderAll(){
   renderDashboard(); renderDeals(); renderTasks(); renderDaily(); renderDatalists();
   const att = state.deals.filter(d=>isLate(d)||isUnpaid(d)).length;
@@ -892,19 +974,19 @@ function renderDashboard(){
   }).join('');
 
   const att = [];
-  lateDeals.sort((a,b)=>(a.nextDate||'').localeCompare(b.nextDate||'')).forEach(d=>att.push({lv:'red', t:d.co, s:`다음 행동 기한 초과 (${fmtDate(d.nextDate)}) · ${esc(d.next||'내용 미입력')}`, fn:()=>openDealModal(d.id)}));
-  unpaid.forEach(d=>att.push({lv:'red', t:d.co, s:`잔금 미수 ${fmtWonFull(balance(d))}${d.deliverDate?` · 납품 ${fmtDate(d.deliverDate)}`:''}`, fn:()=>openDealModal(d.id)}));
-  overdueTasks.forEach(t=>att.push({lv:'red', t:t.title, s:`업무 기한 초과 (${fmtDate(t.due)}) · ${t.cat}`, fn:()=>goView('tasks')}));
-  hoWait.forEach(t=>att.push({lv:'amber', t:t.title, s:`완료됨 — ${esc(t.handTo)} 인수인계 대기`, fn:()=>goView('tasks')}));
+  lateDeals.sort((a,b)=>(a.nextDate||'').localeCompare(b.nextDate||'')).forEach(d=>att.push({lv:'red', ic:'alert', t:d.co, s:`다음 행동 기한 초과 (${fmtDate(d.nextDate)}) · ${esc(d.next||'내용 미입력')}`, fn:()=>openDealModal(d.id)}));
+  unpaid.forEach(d=>att.push({lv:'red', ic:'won', t:d.co, s:`잔금 미수 <b style="color:var(--red)">${fmtWonFull(balance(d))}</b>${d.deliverDate?` · 납품 ${fmtDate(d.deliverDate)}`:''}`, fn:()=>openDealModal(d.id)}));
+  overdueTasks.forEach(t=>att.push({lv:'red', ic:'clock', t:t.title, s:`업무 기한 초과 (${fmtDate(t.due)}) · ${t.cat}`, fn:()=>goView('tasks')}));
+  hoWait.forEach(t=>att.push({lv:'amber', ic:'hand', t:t.title, s:`완료됨 — ${esc(t.handTo)} 인수인계 대기`, fn:()=>goView('tasks')}));
   const pinned = [];
-  if(state.inbox.length) pinned.push({lv:'amber', t:`빠른 메모 ${state.inbox.length}건이 정리를 기다립니다`, s:`퇴근 전에 기한을 정해 정식 업무로 바꿔주세요. 눌러서 이동 →`, fn:()=>goView('daily')});
+  if(state.inbox.length) pinned.push({lv:'amber', ic:'note', t:`빠른 메모 ${state.inbox.length}건이 정리를 기다립니다`, s:`퇴근 전에 기한을 정해 정식 업무로 바꿔주세요. 눌러서 이동 →`, fn:()=>goView('daily')});
   const nn = state.deals.filter(noNext);
-  if(nn.length) pinned.push({lv:'amber', t:`다음 행동이 없는 진행 건 ${nn.length}건`, s:`영업 건마다 '다음 행동'을 정해두면 놓치지 않습니다. 눌러서 확인 →`, fn:()=>{dealFilter='nonext'; goView('deals'); renderDeals();}});
+  if(nn.length) pinned.push({lv:'amber', ic:'alert', t:`다음 행동이 없는 진행 건 ${nn.length}건`, s:`영업 건마다 '다음 행동'을 정해두면 놓치지 않습니다. 눌러서 확인 →`, fn:()=>{dealFilter='nonext'; goView('deals'); renderDeals();}});
   const cap = Math.max(3, 8 - pinned.length);
   const shown = att.slice(0, cap).concat(pinned);
   window.__att = shown.map(a=>a.fn);
   $('attentionList').innerHTML = shown.length
-    ? shown.map((a,i)=>`<div class="attention-item ${a.lv}" data-att="${i}"><strong>${esc(a.t)}</strong><span>${a.s}</span></div>`).join('') + (att.length>cap?`<div class="empty">외 ${att.length-cap}건 — 영업·업무 화면에서 확인하세요</div>`:'')
+    ? shown.map((a,i)=>`<div class="attention-item ${a.lv}" data-att="${i}"><span class="ai-ic">${SVG[a.ic||'alert']}</span><div class="ai-tx"><strong>${esc(a.t)}</strong><span>${a.s}</span></div><span class="ai-go">›</span></div>`).join('') + (att.length>cap?`<div class="empty">외 ${att.length-cap}건 — 영업·업무 화면에서 확인하세요</div>`:'')
     : `<div class="empty">현재 긴급 경고가 없습니다. 🎉</div>`;
 
   const impTasks = state.tasks.filter(t=>!fullyDone(t) && t.priority==='high');
@@ -916,7 +998,7 @@ function renderDashboard(){
 }
 
 /* ═══ 영업 파이프라인 ═══ */
-const FILTERS = [['active','진행 중'],['관심','관심'],['견적','견적'],['예산','예산'],['수주','수주'],['보류','보류'],['완료','완료'],['closed','취소·실주'],['warn','⚠ 주의'],['all','전체']];
+const FILTERS = [['all','전체'],['active','진행 중'],['관심','관심'],['견적','견적'],['예산','예산'],['수주','수주'],['보류','보류'],['완료','완료'],['closed','취소·실주'],['warn','⚠ 주의']];
 function renderDeals(){
   const q = ($('dealSearch').value||'').trim().toLowerCase();
   const counts = f => f==='active'?state.deals.filter(isActive).length : f==='closed'?state.deals.filter(d=>['취소','실주'].includes(d.status)).length : f==='warn'?state.deals.filter(d=>isLate(d)||isUnpaid(d)).length : f==='nonext'?state.deals.filter(noNext).length : f==='all'?state.deals.length : state.deals.filter(d=>d.status===f).length;
@@ -1146,7 +1228,7 @@ function taskHtml(t, compact){
         <div class="tk-title">${esc(t.title)}</div>
         <div class="tk-meta"><span>${t.cat}</span>${deal?`<span>${esc(deal.co)}</span>`:''}${t.handTo?`<span>인계: ${esc(t.handTo)} ✓</span>`:''}</div>
       </div>
-      <button class="tk-del" data-tdel="${t.id}">✕</button>
+      <button class="tk-del" data-tdel="${t.id}">${SVG.x}</button>
     </article>`;
   }
   return `<article class="task-item">
@@ -1163,9 +1245,9 @@ function taskHtml(t, compact){
         ${!t.due&&!t.done?`<button class="setdue-btn" data-setdue="${t.id}|0">기한: 오늘로</button><button class="setdue-btn" data-setdue="${t.id}|1">내일로</button>`:''}
       </div>
     </div>
-    <button class="star-btn ${t.priority==='high'?'on':''}" data-tstar="${t.id}" title="중요 표시">${t.priority==='high'?'★':'☆'}</button>
+    <button class="star-btn ${t.priority==='high'?'on':''}" data-tstar="${t.id}" title="중요 표시">${SVG.star(t.priority==='high')}</button>
     ${t.handTo?`<button class="ho-btn ${t.handedOver?'done':''}" data-tho="${t.id}">${t.handedOver?'✓ 인계 완료':`인수인계<br>${esc(t.handTo)}`}</button>`:''}
-    <button class="tk-del" data-tdel="${t.id}">✕</button>
+    <button class="tk-del" data-tdel="${t.id}">${SVG.x}</button>
   </article>`;
 }
 function openTaskModal(id, preset){
@@ -1224,6 +1306,8 @@ function exportCsv(){
 
 /* ═══ 이벤트 ═══ */
 function setupStatic(){
+  const NAV_IC={dashboard:'nav_dash',deals:'nav_deal',tasks:'nav_task',daily:'nav_daily',settings:'nav_set'};
+  document.querySelectorAll('.nav-btn').forEach(b=>{ const ic=b.querySelector('.ic'); if(ic) ic.innerHTML=SVG[NAV_IC[b.dataset.view]]; });
   $('flowEyebrow').textContent=`SALES FLOW · ${new Date().getFullYear()}`;
   $('todayLabel').textContent=new Intl.DateTimeFormat('ko-KR',{year:'numeric',month:'long',day:'numeric',weekday:'long'}).format(new Date());
   $('stageGuide').innerHTML=STATUS_GUIDE.map(([s,g])=>`<div class="stage-guide-item"><span class="badge b-${s.split('·')[0]}">${s}</span><span class="muted">${g}</span></div>`).join('');
