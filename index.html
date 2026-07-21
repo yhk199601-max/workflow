@@ -765,6 +765,18 @@ const balance = d => (Number(d.wonAmt)||0) - (Number(d.paidAmt)||0);
 const isLate = d => isActive(d) && d.nextDate && dday(d.nextDate) < 0;
 const noNext = d => isActive(d) && !d.next && !d.nextDate;
 const isUnpaid = d => d.status==='수주' && Number(d.wonAmt)>0 && balance(d)>0;
+const readyToClose = d => d.status==='수주' && Number(d.wonAmt)>0 && balance(d)<=0 && !!d.deliverDate && !!String(d.reportDate||'').trim();
+function autoCompleteDeals(){
+  let n=0;
+  state.deals.forEach(d=>{
+    if(readyToClose(d)){
+      d.notes=d.notes||[];
+      d.notes.push({t:Date.now(), txt:'진행 변경: 수주 → 완료 (신고·납품·입금 확인, 자동 처리)'});
+      d.status='완료'; d.statusAt=Date.now(); n++;
+    }
+  });
+  return n;
+}
 const fullyDone = t => t.done && (!t.handTo || t.handedOver);
 const taskOverdue = t => !t.done && t.due && dday(t.due)<0;
 
@@ -998,8 +1010,9 @@ function renderPickerList(){
 }
 function numVal(id){ return Number(String($(id).value).replace(/[^\d]/g,''))||0; }
 function balLive(){
-  const b = numVal('d_wonAmt') - numVal('d_paid');
-  $('d_bal').textContent = fmtWonFull(b)||'0원';
+  const won = numVal('d_wonAmt');
+  const b = won - numVal('d_paid');
+  $('d_bal').textContent = won ? b.toLocaleString('ko-KR')+'원' : '-';
   $('d_bal').className = b>0?'pos':'zero';
 }
 function openDealModal(id){
@@ -1045,9 +1058,15 @@ function saveDeal(){
     if(d.status!==status){ d.notes.push({t:Date.now(), txt:`진행 변경: ${d.status} → ${status}`}); d.statusAt=Date.now(); }
     Object.assign(d, data);
     if(note) d.notes.push({t:Date.now(), txt:note});
-    if(status==='완료') toast('🎉 입금까지 완료! 수고 많으셨습니다.');
+    if(readyToClose(d)){
+      d.notes.push({t:Date.now(), txt:'진행 변경: 수주 → 완료 (신고·납품·입금 확인, 자동 처리)'});
+      d.status='완료'; d.statusAt=Date.now();
+      toast('🎉 신고·납품·입금까지 확인되어 완료 탭으로 이동했습니다!');
+    } else if(status==='완료') toast('🎉 입금까지 완료! 수고 많으셨습니다.');
   } else {
-    state.deals.push({ id:uid('deal'), ...data, notes:note?[{t:Date.now(),txt:note}]:[], statusAt:Date.now(), createdAt:Date.now() });
+    const nd={ id:uid('deal'), ...data, notes:note?[{t:Date.now(),txt:note}]:[], statusAt:Date.now(), createdAt:Date.now() };
+    if(readyToClose(nd)){ nd.notes.push({t:Date.now(),txt:'진행 변경: 수주 → 완료 (신고·납품·입금 확인, 자동 처리)'}); nd.status='완료'; }
+    state.deals.push(nd);
   }
   $('dealOverlay').classList.remove('on');
   saveData(editingDealId?'영업 건을 수정했습니다.':'영업 건을 추가했습니다.');
@@ -1350,7 +1369,11 @@ document.addEventListener('visibilitychange',()=>{ if(!document.hidden && syncCf
 setInterval(()=>{ if(syncCfg && !document.hidden) pullRemote(true); }, 90000);
 
 setupStatic(); bindEvents(); bindSync(); renderAll();
-if(syncCfg) pullRemote(true);
+function runAutoComplete(){
+  const n=autoCompleteDeals();
+  if(n){ touchSync(); renderAll(); toast(`🎉 신고·납품·입금이 끝난 ${n}건을 완료 탭으로 이동했습니다.`); }
+}
+if(syncCfg) pullRemote(true).then(runAutoComplete); else runAutoComplete();
 if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./service-worker.js').catch(()=>{});
 </script>
 </body>
