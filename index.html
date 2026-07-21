@@ -1,0 +1,1172 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="theme-color" content="#f7f4f0" />
+<link rel="manifest" href="manifest.json" />
+<link rel="apple-touch-icon" href="icon-192.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<title>업무 흐름 관리</title>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
+<style>
+:root {
+  --bg: #f7f4f0;
+  --panel: #fffdfb;
+  --panel-2: #f1ebe5;
+  --text: #292522;
+  --muted: #756d67;
+  --line: #e5ddd5;
+  --primary: #785b51;
+  --primary-2: #9a776a;
+  --rose: #c97f88;
+  --green: #6d8c75;
+  --amber: #b88743;
+  --red: #b65d5d;
+  --red-soft: #fbe8e8;
+  --amber-soft: #fff1d9;
+  --green-soft: #e8f3ea;
+  --blue: #5f7d9c;
+  --blue-soft: #e6edf4;
+  --purple: #8a76a5;
+  --purple-soft: #ece7f2;
+  --shadow: 0 12px 35px rgba(72, 57, 48, .07);
+  --radius: 18px;
+  --mono: ui-monospace, 'SF Mono', 'Cascadia Mono', Consolas, monospace;
+}
+* { box-sizing: border-box; }
+body { margin: 0; font-family: 'Pretendard Variable', Pretendard, "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); line-height: 1.55; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+
+/* ── 앱 셸 ── */
+.app-shell { display: grid; grid-template-columns: 245px 1fr; min-height: 100vh; }
+.sidebar { position: sticky; top: 0; height: 100vh; padding: 26px 18px; background: #312c29; color: #fff; display: flex; flex-direction: column; }
+.brand { display: flex; gap: 12px; align-items: center; padding: 0 8px 24px; }
+.brand-mark { width: 42px; height: 42px; border-radius: 14px; background: linear-gradient(145deg, #d9b5b8, #b78488); display: grid; place-items: center; font-weight: 800; color: #fff; font-size: 18px; }
+.brand strong { display: block; font-size: 15px; }
+.brand span { display: block; color: #bcb3ad; font-size: 11px; margin-top: 4px; }
+.nav { display: grid; gap: 8px; }
+.nav-btn { border: 0; color: #cfc6c0; background: transparent; border-radius: 12px; padding: 12px 14px; display: flex; gap: 12px; align-items: center; text-align: left; position: relative; }
+.nav-btn:hover, .nav-btn.active { color: #fff; background: #463e3a; }
+.nav-btn span.ic { width: 20px; text-align: center; }
+.nav-btn .nbadge { margin-left: auto; font-family: var(--mono); font-size: 10px; font-weight: 700; background: var(--red); color: #fff; border-radius: 999px; padding: 2px 7px; }
+.sidebar-tip { margin-top: auto; padding: 16px; border-radius: 14px; background: #3e3733; border: 1px solid #4c433e; }
+.sidebar-tip strong { font-size: 13px; }
+.sidebar-tip p { margin: 8px 0 0; color: #c8bdb6; font-size: 11px; line-height: 1.65; }
+.main { padding: 28px 34px 48px; min-width: 0; }
+.topbar { display: flex; justify-content: space-between; align-items: center; gap: 20px; margin-bottom: 24px; flex-wrap: wrap; }
+.topbar h1 { margin: 3px 0 0; font-size: 29px; }
+.eyebrow { margin: 0; color: var(--primary-2); font-size: 11px; font-weight: 800; letter-spacing: .12em; }
+.top-actions { display: flex; gap: 10px; }
+.btn { border: 1px solid transparent; padding: 10px 15px; border-radius: 11px; font-weight: 700; transition: .15s; background: none; }
+.btn:hover { transform: translateY(-1px); }
+.btn.primary { background: var(--primary); color: #fff; }
+.btn.secondary { background: var(--panel); border-color: var(--line); color: var(--text); }
+.btn.ghost { background: transparent; border-color: var(--line); color: var(--muted); }
+.btn.danger { background: var(--red); color: #fff; }
+.btn.wide { width: 100%; }
+.text-btn { border: 0; background: none; color: var(--primary); font-weight: 700; }
+.view { display: none; }
+.view.active { display: block; animation: fade .16s ease; }
+@keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; box-shadow: var(--shadow); }
+.panel.compact { padding: 13px; }
+.panel-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 15px; margin-bottom: 18px; }
+.panel h2 { margin: 4px 0 0; font-size: 19px; }
+.count-pill { border: 1px solid var(--line); border-radius: 999px; padding: 5px 10px; color: var(--muted); font-size: 11px; white-space: nowrap; }
+.empty { text-align: center; color: var(--muted); padding: 28px 10px; font-size: 13px; }
+.muted { color: var(--muted); font-size: 12px; line-height: 1.65; }
+
+/* ── 대시보드 ── */
+.alert-strip { display: none; border-radius: 14px; padding: 13px 16px; margin-bottom: 16px; background: #fff4e4; border: 1px solid #ecd1a7; color: #6f4d21; font-size: 13px; }
+.alert-strip.show { display: block; }
+.metric-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 18px; }
+.metric { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 18px; box-shadow: var(--shadow); }
+.metric .label { color: var(--muted); font-size: 12px; }
+.metric strong { display: block; font-size: 26px; margin: 9px 0 4px; letter-spacing: -.01em; }
+.metric small { color: var(--muted); }
+.metric.warn strong { color: var(--red); }
+.content-grid { display: grid; gap: 18px; margin-bottom: 18px; }
+.content-grid.two-one { grid-template-columns: 2fr 1fr; }
+.content-grid.equal { grid-template-columns: 1fr 1fr; }
+.pipeline-summary { display: grid; grid-template-columns: repeat(6, 1fr); gap: 9px; }
+.stage-mini { padding: 14px 8px; border-radius: 13px; background: var(--panel-2); text-align: center; cursor: pointer; border: 1px solid transparent; transition: .13s; }
+.stage-mini:hover { border-color: var(--primary-2); }
+.stage-mini strong { display: block; font-size: 20px; }
+.stage-mini span { display: block; margin-top: 5px; font-size: 11px; color: var(--muted); }
+.stage-mini small { display: block; margin-top: 3px; font-size: 10px; color: var(--primary-2); font-family: var(--mono); }
+.danger-panel { background: #fffaf8; }
+.attention-list, .list { display: grid; gap: 9px; }
+.attention-item, .list-item { border: 1px solid var(--line); border-radius: 12px; padding: 12px; background: #fff; cursor: pointer; transition: .12s; }
+.attention-item:hover, .list-item:hover { border-color: var(--primary-2); }
+.attention-item strong, .list-item strong { display: block; font-size: 13px; }
+.attention-item span, .list-item span { display: block; margin-top: 5px; color: var(--muted); font-size: 11px; line-height: 1.5; }
+.attention-item.red { border-left: 4px solid var(--red); background: #fffcfb; }
+.attention-item.amber { border-left: 4px solid var(--amber); }
+
+/* ── 상태 배지 ── */
+.badge { display: inline-flex; align-items: center; border-radius: 999px; padding: 4px 10px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+.b-관심 { background: var(--panel-2); color: var(--muted); }
+.b-견적 { background: var(--blue-soft); color: var(--blue); }
+.b-예산 { background: var(--purple-soft); color: var(--purple); }
+.b-수주 { background: var(--green-soft); color: var(--green); }
+.b-보류 { background: var(--amber-soft); color: #946425; }
+.b-완료 { background: #dcebe0; color: #477050; }
+.b-취소, .b-실주 { background: #efece9; color: #a89e96; text-decoration: line-through; }
+.dchip { font-family: var(--mono); font-size: 10px; font-weight: 700; border-radius: 999px; padding: 3px 8px; white-space: nowrap; }
+.dchip.red { background: var(--red); color: #fff; }
+.dchip.amber { background: var(--amber-soft); color: #946425; }
+.dchip.gray { background: var(--panel-2); color: var(--muted); }
+
+/* ── 영업 파이프라인 (표) ── */
+.toolbar { display: grid; grid-template-columns: minmax(200px, 1fr) 170px auto; gap: 9px; margin-bottom: 12px; }
+input, select, textarea { width: 100%; border: 1px solid var(--line); border-radius: 10px; padding: 10px 11px; background: #fff; color: var(--text); outline: none; }
+input:focus, select:focus, textarea:focus { border-color: var(--primary-2); box-shadow: 0 0 0 3px rgba(154,119,106,.1); }
+.sfilter { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 12px; }
+.fbtn { padding: 7px 13px; border-radius: 999px; font-size: 12px; font-weight: 700; border: 1px solid var(--line); background: var(--panel); color: var(--muted); white-space: nowrap; }
+.fbtn.on { background: var(--primary); border-color: var(--primary); color: #fff; }
+.fbtn .n { font-family: var(--mono); font-size: 10px; opacity: .8; margin-left: 4px; }
+.pipe-sum { font-size: 12px; color: var(--muted); margin-bottom: 12px; font-family: var(--mono); }
+.pipe-sum b { color: var(--primary); }
+table.pipe { width: 100%; border-collapse: collapse; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); font-size: 13px; }
+table.pipe th { font-size: 10px; letter-spacing: .1em; color: var(--muted); text-align: left; padding: 11px 13px; background: var(--panel-2); border-bottom: 1px solid var(--line); font-weight: 800; white-space: nowrap; }
+table.pipe td { padding: 11px 13px; border-bottom: 1px solid #efe9e2; vertical-align: middle; }
+table.pipe tr.row { cursor: pointer; transition: .1s; }
+table.pipe tr.row:hover td { background: #faf6f2; }
+table.pipe tr.row.late td { background: #fdf5f4; }
+table.pipe tr.row.late:hover td { background: #fbecea; }
+td.co { font-weight: 700; }
+td.co .sub { display: block; font-size: 11px; font-weight: 500; color: var(--muted); margin-top: 2px; }
+td.amt { font-family: var(--mono); font-weight: 700; white-space: nowrap; text-align: right; }
+td.dt { font-family: var(--mono); font-size: 11px; color: var(--muted); white-space: nowrap; }
+td.nx .t { font-size: 12px; }
+td.nx .none { color: #c2b8ae; font-size: 11px; }
+.wonprog { display: flex; gap: 4px; flex-wrap: wrap; }
+.wp { font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 6px; background: var(--panel-2); color: #b1a79e; white-space: nowrap; }
+.wp.ok { background: var(--green-soft); color: var(--green); }
+.wp.bal { background: var(--red-soft); color: var(--red); }
+.pipe-cards { display: none; }
+.pcard { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px; margin-bottom: 10px; cursor: pointer; box-shadow: var(--shadow); }
+.pcard.late { border-left: 4px solid var(--red); }
+.pcard .r1 { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; }
+.pcard .co { font-weight: 700; font-size: 14px; }
+.pcard .r2 { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 6px; font-size: 11px; color: var(--muted); }
+.pcard .amt { font-family: var(--mono); font-weight: 700; color: var(--text); }
+.pcard .nx { margin-top: 10px; background: #f8f4f1; padding: 9px 11px; border-radius: 9px; font-size: 12px; line-height: 1.5; display: flex; gap: 7px; align-items: center; flex-wrap: wrap; }
+.pcard .nx.late-t { background: var(--red-soft); color: #8f4040; font-weight: 600; }
+
+/* ── 업무 추적 ── */
+.task-layout { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 18px; }
+.tgroup { margin-bottom: 22px; }
+.tgroup-hd { display: flex; align-items: center; gap: 9px; font-size: 14px; font-weight: 800; margin-bottom: 9px; }
+.tgroup-hd .n { font-family: var(--mono); font-size: 10px; font-weight: 700; padding: 2px 9px; border-radius: 999px; background: var(--panel-2); color: var(--muted); }
+.tgroup.late .tgroup-hd { color: var(--red); }
+.tgroup.late .tgroup-hd .n { background: var(--red); color: #fff; }
+.tgroup.today .tgroup-hd { color: #946425; }
+.tgroup.today .tgroup-hd .n { background: var(--amber); color: #fff; }
+.task-item { border: 1px solid var(--line); border-radius: 14px; padding: 13px 15px; display: flex; gap: 13px; align-items: center; background: #fff; margin-bottom: 9px; box-shadow: 0 7px 17px rgba(70,55,45,.04); }
+.tgroup.late .task-item { border-left: 4px solid var(--red); background: #fffbfa; }
+.tgroup.today .task-item { border-left: 4px solid var(--amber); }
+.task-item.done { opacity: .55; }
+.task-item.done .tk-title { text-decoration: line-through; }
+.tk-check { width: 24px; height: 24px; border: 2px solid #cfc4ba; border-radius: 8px; flex-shrink: 0; display: grid; place-items: center; font-size: 13px; color: #fff; background: #fff; transition: .12s; padding: 0; }
+.tk-check.c1 { background: var(--green); border-color: var(--green); }
+.tk-body { flex: 1; min-width: 0; cursor: pointer; }
+.tk-title { font-size: 14px; font-weight: 600; word-break: break-all; line-height: 1.45; }
+.tk-meta { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; align-items: center; font-size: 11px; color: var(--muted); }
+.tk-due { font-family: var(--mono); }
+.tk-due.red { color: var(--red); font-weight: 700; }
+.ho-btn { font-size: 11px; font-weight: 700; padding: 6px 11px; border-radius: 999px; border: 1.5px dashed #cfc4ba; color: var(--muted); flex-shrink: 0; line-height: 1.3; background: #fff; }
+.ho-btn.done { border-style: solid; border-color: var(--green); background: var(--green-soft); color: var(--green); }
+.tk-del { color: #cfc4ba; font-size: 15px; padding: 2px 5px; flex-shrink: 0; border: 0; background: none; }
+.tk-del:hover { color: var(--red); }
+.guardrail ol { padding: 0; margin: 20px 0 0; list-style: none; display: grid; gap: 17px; }
+.guardrail li { display: grid; gap: 5px; border-left: 3px solid var(--rose); padding-left: 12px; }
+.guardrail li strong { font-size: 12px; }
+.guardrail li span { color: var(--muted); font-size: 11px; line-height: 1.55; }
+
+/* ── 오늘의 정리 ── */
+.focus-items { display: grid; gap: 10px; margin: 18px 0; }
+.focus-row { display: grid; grid-template-columns: 28px 1fr; gap: 8px; align-items: center; }
+.focus-row span { width: 27px; height: 27px; display: grid; place-items: center; border-radius: 9px; background: var(--panel-2); font-size: 12px; font-weight: 800; }
+.stack-form { display: grid; gap: 9px; margin: 17px 0; }
+.inbox-list { display: grid; gap: 8px; }
+.inbox-item { display: grid; grid-template-columns: 1fr auto; gap: 8px; background: #f8f4f1; border-radius: 11px; padding: 11px; font-size: 12px; align-items: center; }
+.inbox-item small { display: block; color: var(--muted); margin-top: 4px; }
+.mini-btn { border: 1px solid var(--line); background: #fff; border-radius: 8px; padding: 6px 9px; font-size: 11px; }
+.eod-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.eod-grid label { border: 1px solid var(--line); border-radius: 11px; padding: 12px; font-size: 12px; display: flex; gap: 8px; align-items: flex-start; }
+.eod-grid input { width: auto; margin-top: 2px; }
+.eod-panel textarea { margin-bottom: 10px; }
+
+/* ── 설정 ── */
+.button-stack { display: grid; gap: 9px; margin-top: 18px; }
+.file-btn { text-align: center; }
+.file-btn input { display: none; }
+.stage-guide { display: grid; gap: 9px; margin-top: 17px; }
+.stage-guide-item { display: grid; grid-template-columns: 66px 1fr; gap: 10px; align-items: center; font-size: 11px; }
+.danger-zone { margin-top: 18px; border-color: #efd2d2; }
+.storage-note { display: none; margin-top: 16px; border-radius: 12px; padding: 12px 15px; background: var(--amber-soft); border: 1px solid #ecd1a7; color: #6f4d21; font-size: 12px; }
+.storage-note.show { display: block; }
+.sync-status { font-family: var(--mono); font-size: 11px; margin-top: 10px; padding: 8px 12px; border-radius: 9px; background: var(--panel-2); color: var(--muted); }
+.sync-status.ok { background: var(--green-soft); color: var(--green); }
+.sync-status.err { background: var(--red-soft); color: var(--red); }
+.sync-steps { margin: 12px 0 0; padding-left: 18px; color: var(--muted); font-size: 12px; line-height: 1.8; }
+
+/* ── 모달 ── */
+.overlay { position: fixed; inset: 0; background: rgba(32,27,24,.48); display: none; z-index: 100; align-items: center; justify-content: center; padding: 16px; }
+.overlay.on { display: flex; }
+.modal-box { background: var(--panel); width: min(760px, 100%); max-height: 92vh; overflow-y: auto; border-radius: 20px; padding: 24px; box-shadow: 0 24px 80px rgba(38,28,24,.25); animation: up .18s ease; }
+@keyframes up { from { transform: translateY(24px); opacity: .5; } to { transform: none; opacity: 1; } }
+.modal-head { display: flex; justify-content: space-between; align-items: start; margin-bottom: 20px; }
+.modal-head h2 { margin: 4px 0 0; font-size: 20px; }
+.icon-btn { border: 0; background: var(--panel-2); width: 34px; height: 34px; border-radius: 10px; font-size: 20px; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 13px; }
+.form-grid label { display: grid; gap: 6px; font-size: 11px; font-weight: 700; color: var(--muted); }
+.form-grid .f3wrap { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 13px; grid-column: span 2; }
+.span-2 { grid-column: span 2; }
+.amt-hint { font-family: var(--mono); font-size: 11px; color: var(--primary-2); font-weight: 600; min-height: 14px; }
+.won-fieldset { border: 1px solid #d7e3d9; border-radius: 13px; padding: 14px; margin: 16px 0 0; background: #f7faf7; }
+.won-fieldset legend { padding: 0 7px; font-size: 11px; font-weight: 800; color: var(--green); }
+.bal-line { font-family: var(--mono); font-size: 13px; align-self: end; padding: 10px 2px; }
+.bal-line b.pos { color: var(--red); }
+.bal-line b.zero { color: var(--green); }
+.timeline { border-left: 2px solid var(--panel-2); margin: 14px 0 0 6px; padding-left: 14px; }
+.tl-item { margin-bottom: 11px; position: relative; font-size: 12.5px; white-space: pre-wrap; word-break: break-all; line-height: 1.6; }
+.tl-item::before { content: ''; position: absolute; left: -19.5px; top: 5px; width: 9px; height: 9px; border-radius: 50%; background: var(--primary-2); border: 2px solid var(--panel); }
+.tl-item .t { font-family: var(--mono); font-size: 10px; color: var(--muted); }
+.modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; flex-wrap: wrap; }
+.toast { position: fixed; right: 24px; bottom: 24px; background: #332d29; color: #fff; border-radius: 12px; padding: 12px 16px; opacity: 0; transform: translateY(15px); pointer-events: none; transition: .2s; z-index: 200; font-size: 12px; max-width: 86vw; }
+.toast.show { opacity: 1; transform: translateY(0); }
+
+@media (max-width: 1100px) {
+  .app-shell { grid-template-columns: 78px 1fr; }
+  .sidebar { padding: 20px 11px; }
+  .brand strong, .brand span, .nav-btn { font-size: 0; }
+  .brand { justify-content: center; padding-inline: 0; }
+  .nav-btn { justify-content: center; padding: 13px; }
+  .nav-btn span.ic { font-size: 17px; }
+  .nav-btn .nbadge { position: absolute; top: 4px; right: 6px; font-size: 9px; }
+  .sidebar-tip { display: none; }
+  .metric-grid { grid-template-columns: repeat(2, 1fr); }
+  .content-grid.two-one, .task-layout { grid-template-columns: 1fr; }
+  .guardrail { display: none; }
+  .pipeline-summary { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 720px) {
+  .app-shell { display: block; }
+  .sidebar { position: fixed; z-index: 90; bottom: 0; top: auto; width: 100%; height: 66px; padding: 8px; flex-direction: row; }
+  .brand { display: none; }
+  .nav { width: 100%; grid-template-columns: repeat(5, 1fr); gap: 3px; }
+  .nav-btn { display: grid; place-items: center; padding: 8px; }
+  .main { padding: 20px 14px 96px; }
+  .topbar h1 { font-size: 23px; }
+  .top-actions .secondary { display: none; }
+  .metric-grid, .content-grid.equal, .eod-grid { grid-template-columns: 1fr; }
+  .toolbar { grid-template-columns: 1fr; }
+  table.pipe { display: none; }
+  .pipe-cards { display: block; }
+  .form-grid, .form-grid .f3wrap { grid-template-columns: 1fr; }
+  .span-2, .form-grid .f3wrap { grid-column: span 1; }
+  .overlay { align-items: flex-end; padding: 0; }
+  .modal-box { border-radius: 20px 20px 0 0; }
+  .pipeline-summary { grid-template-columns: repeat(3, 1fr); }
+}
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<style>
+/* ── 올해 목표 달성률 ── */
+.target-panel { margin-bottom: 18px; }
+.target-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 14px; flex-wrap: wrap; margin-bottom: 14px; }
+.target-head .pct { font-size: 34px; font-weight: 800; letter-spacing: -.02em; color: var(--green); line-height: 1; }
+.target-head .pct small { font-size: 13px; color: var(--muted); font-weight: 600; margin-left: 5px; }
+.target-bar { position: relative; height: 26px; border-radius: 999px; background: var(--panel-2); overflow: visible; }
+.tb-fill { position: absolute; inset: 0 auto 0 0; border-radius: 999px; transition: width .5s ease; }
+.tb-done { background: linear-gradient(90deg, #6d8c75, #7fa088); z-index: 2; }
+.tb-won { background: #c9dccd; z-index: 1; }
+.tb-pace { position: absolute; top: -7px; bottom: -7px; width: 2px; background: var(--primary-2); z-index: 3; }
+.tb-pace::after { content: attr(data-label); position: absolute; top: -17px; left: 50%; transform: translateX(-50%); font-size: 10px; font-weight: 700; color: var(--primary-2); white-space: nowrap; }
+.target-legend { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 12px; font-size: 12px; color: var(--muted); }
+.target-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+.target-legend b { color: var(--text); font-family: var(--mono); font-weight: 700; }
+.target-edit { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.target-edit input { max-width: 220px; }
+
+/* ── 어디서나 빠른 캡처 ── */
+.qcap { flex: 1; min-width: 200px; max-width: 430px; display: flex; gap: 7px; }
+.qcap input { border-radius: 999px; padding: 10px 16px; background: var(--panel); }
+.qcap input:focus { border-color: var(--primary-2); }
+
+/* ── 기한 빠른 지정 ── */
+.due-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 7px; }
+.due-chip { font-size: 11px; font-weight: 700; padding: 5px 11px; border-radius: 999px; border: 1px solid var(--line); background: #fff; color: var(--muted); }
+.due-chip:hover, .due-chip.on { background: var(--primary); border-color: var(--primary); color: #fff; }
+.setdue-btn { font-size: 10px; font-weight: 700; padding: 3px 9px; border-radius: 999px; border: 1px dashed var(--amber); background: var(--amber-soft); color: #946425; }
+.setdue-btn:hover { background: var(--amber); color: #fff; }
+.tgroup.nodate .tgroup-hd { color: #946425; }
+.tgroup.nodate .task-item { border-left: 4px dashed var(--amber); background: #fffdf7; }
+.postpone-chip { font-family: var(--mono); font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 999px; background: var(--amber-soft); color: #946425; }
+.postpone-chip.hot { background: var(--red-soft); color: var(--red); }
+@media (max-width: 900px) { .qcap { max-width: 100%; flex-basis: 100%; order: 3; } }
+</style>
+<body>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">F</div>
+      <div>
+        <strong>업무 흐름 관리</strong>
+        <span>놓치지 않는 영업·업무 관리</span>
+      </div>
+    </div>
+    <nav id="nav" class="nav">
+      <button class="nav-btn active" data-view="dashboard"><span class="ic">▦</span>대시보드</button>
+      <button class="nav-btn" data-view="deals"><span class="ic">◎</span>영업 파이프라인<span class="nbadge" id="navDealBadge" style="display:none"></span></button>
+      <button class="nav-btn" data-view="tasks"><span class="ic">✓</span>업무 추적<span class="nbadge" id="navTaskBadge" style="display:none"></span></button>
+      <button class="nav-btn" data-view="daily"><span class="ic">✎</span>오늘의 정리<span class="nbadge" id="navInboxBadge" style="display:none;background:var(--amber)"></span></button>
+      <button class="nav-btn" data-view="settings"><span class="ic">⚙</span>데이터·설정</button>
+    </nav>
+    <div class="sidebar-tip">
+      <strong>놓침 방지 원칙</strong>
+      <p>모든 영업 건에는 '다음 행동'이 있어야 하고, 모든 업무는 '완료 → 인수인계'까지 끝나야 닫힙니다.</p>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow" id="todayLabel"></p>
+        <h1 id="viewTitle">대시보드</h1>
+      </div>
+      <div class="qcap">
+        <input id="qcapInput" placeholder="⚡ 방금 생긴 일, 일단 여기 적으세요 (Enter)" />
+      </div>
+      <div class="top-actions">
+        <button class="btn secondary" id="quickTaskBtn">+ 빠른 업무</button>
+        <button class="btn primary" id="newDealBtn">+ 영업 건</button>
+      </div>
+    </header>
+
+    <!-- ═══ 대시보드 ═══ -->
+    <section id="dashboard" class="view active">
+      <div class="alert-strip" id="alertStrip"></div>
+      <article class="panel target-panel" id="targetPanel"></article>
+      <div class="metric-grid" id="metricGrid"></div>
+
+      <div class="content-grid two-one">
+        <article class="panel">
+          <div class="panel-head">
+            <div><p class="eyebrow" id="flowEyebrow">SALES FLOW</p><h2>현재 영업 흐름</h2></div>
+            <button class="text-btn" data-go="deals">전체 보기 →</button>
+          </div>
+          <div id="pipelineSummary" class="pipeline-summary"></div>
+        </article>
+        <article class="panel danger-panel">
+          <div class="panel-head"><div><p class="eyebrow">NEEDS ATTENTION</p><h2>지금 확인할 것</h2></div></div>
+          <div id="attentionList" class="attention-list"></div>
+        </article>
+      </div>
+
+      <div class="content-grid equal">
+        <article class="panel">
+          <div class="panel-head"><div><p class="eyebrow">TODAY</p><h2>오늘 마감 업무</h2></div><button class="text-btn" data-go="tasks">업무 보기 →</button></div>
+          <div id="todayTaskList" class="list"></div>
+        </article>
+        <article class="panel">
+          <div class="panel-head"><div><p class="eyebrow">HANDOFF</p><h2>인수인계 미완료</h2></div></div>
+          <div id="handoffList" class="list"></div>
+        </article>
+      </div>
+    </section>
+
+    <!-- ═══ 영업 파이프라인 ═══ -->
+    <section id="deals" class="view">
+      <div class="toolbar panel compact">
+        <input id="dealSearch" type="search" placeholder="업체명·모델·응용·비고 검색" />
+        <select id="dealSort">
+          <option value="quote_desc">견적일 최신순</option>
+          <option value="quote_asc">견적일 오래된순</option>
+          <option value="amt_desc">금액 높은순</option>
+          <option value="next_asc">다음 행동 임박순</option>
+        </select>
+        <button class="btn primary" id="newDealBtn2">+ 영업 건 추가</button>
+      </div>
+      <div class="sfilter" id="statusFilter"></div>
+      <div class="pipe-sum" id="pipeSum"></div>
+      <table class="pipe">
+        <thead><tr>
+          <th>상태</th><th>업체명</th><th>모델</th><th style="text-align:right">금액</th><th>견적일</th><th>다음 행동</th><th>수주 진행</th>
+        </tr></thead>
+        <tbody id="pipeBody"></tbody>
+      </table>
+      <div class="pipe-cards" id="pipeCards"></div>
+    </section>
+
+    <!-- ═══ 업무 추적 ═══ -->
+    <section id="tasks" class="view">
+      <div class="toolbar panel compact">
+        <input id="taskSearch" type="search" placeholder="업무명·메모·인수인계 대상 검색" />
+        <select id="taskCatFilter">
+          <option value="all">전체 유형</option>
+          <option>영업</option><option>서류</option><option>출고·납품</option><option>고객 대응</option><option>사내 업무</option><option>기타</option>
+        </select>
+        <button class="btn primary" id="newTaskBtn">+ 업무 추가</button>
+      </div>
+      <div class="task-layout">
+        <div>
+          <div id="taskGroups"></div>
+          <div class="panel" style="margin-top:6px">
+            <div class="panel-head"><div><p class="eyebrow">CLOSED</p><h2>인수인계까지 완료된 업무</h2></div><span class="count-pill" id="doneCount"></span></div>
+            <div id="taskDoneList"></div>
+          </div>
+        </div>
+        <aside class="panel guardrail">
+          <p class="eyebrow">COMPLETION GUARDRAIL</p>
+          <h2>업무를 닫기 전 확인</h2>
+          <ol>
+            <li><strong>결과물</strong><span>메일·문서·발주·납품 등 실제 결과가 남았는가?</span></li>
+            <li><strong>상대 확인</strong><span>고객·본사·내부 담당자가 수신 또는 처리했는가?</span></li>
+            <li><strong>후속 행동</strong><span>다음 행동이 없거나, 별도 업무로 등록되었는가?</span></li>
+            <li><strong>인수인계</strong><span>다른 사람이 이어야 한다면 담당자와 내용을 남겼는가?</span></li>
+          </ol>
+        </aside>
+      </div>
+    </section>
+
+    <!-- ═══ 오늘의 정리 ═══ -->
+    <section id="daily" class="view">
+      <div class="content-grid equal">
+        <article class="panel">
+          <p class="eyebrow">MORNING FOCUS</p>
+          <h2>오늘 반드시 끝낼 3가지</h2>
+          <div id="focusItems" class="focus-items"></div>
+          <button class="btn secondary wide" id="saveFocusBtn">오늘의 집중 업무 저장</button>
+        </article>
+        <article class="panel">
+          <p class="eyebrow">QUICK CAPTURE</p>
+          <h2>머릿속 업무 임시 보관함</h2>
+          <p class="muted">업무가 떠오를 때 일단 적어두고, 나중에 정식 업무로 바꾸세요.</p>
+          <div class="stack-form">
+            <textarea id="inboxText" rows="4" placeholder="예: VGS 5대 인보이스 다시 요청 / KINS 신고 일정 확인"></textarea>
+            <button class="btn primary" id="inboxSaveBtn">임시 보관</button>
+          </div>
+          <div id="inboxList" class="inbox-list"></div>
+        </article>
+      </div>
+      <article class="panel eod-panel">
+        <div class="panel-head"><div><p class="eyebrow">END OF DAY</p><h2>퇴근 전 마감 점검</h2></div><span id="eodDate" class="count-pill"></span></div>
+        <div class="eod-grid">
+          <label><input type="checkbox" id="eod1" />오늘 받은 요청을 모두 업무로 등록했습니다.</label>
+          <label><input type="checkbox" id="eod2" />진행 중인 영업 건의 다음 행동을 확인했습니다.</label>
+          <label><input type="checkbox" id="eod3" />기한 초과·잔금 미수 건의 처리 계획을 정했습니다.</label>
+          <label><input type="checkbox" id="eod4" />완료 업무의 인수인계를 확인했습니다.</label>
+        </div>
+        <textarea id="eodNote" rows="3" placeholder="내일 가장 먼저 확인할 것 또는 오늘 놓친 점"></textarea>
+        <button class="btn primary" id="saveEodBtn">마감 기록 저장</button>
+      </article>
+    </section>
+
+    <!-- ═══ 데이터·설정 ═══ -->
+    <section id="settings" class="view">
+      <div class="content-grid equal">
+        <article class="panel">
+          <p class="eyebrow">BACKUP</p><h2>데이터 백업·복원</h2>
+          <p class="muted">데이터는 이 브라우저에 저장됩니다. 주 1회 백업 파일 저장을 권장드려요.</p>
+          <div class="button-stack">
+            <button class="btn primary" id="exportBtn">전체 데이터 백업 (JSON)</button>
+            <label class="btn secondary file-btn">백업 파일 불러오기<input id="importInput" type="file" accept="application/json" /></label>
+            <button class="btn ghost" id="exportCsvBtn">영업 현황 CSV 내보내기 (엑셀 양식 순서)</button>
+          </div>
+          <div class="storage-note" id="storageNote">⚠️ 이 미리보기 환경에서는 브라우저 저장이 지원되지 않아 창을 닫으면 변경사항이 사라집니다. 파일을 PC에 저장해 크롬/엣지로 직접 열면 자동 저장이 활성화됩니다.</div>
+        </article>
+        <article class="panel">
+          <p class="eyebrow">WORKFLOW</p><h2>진행사항 단계 기준</h2>
+          <div id="stageGuide" class="stage-guide"></div>
+        </article>
+      </div>
+      <article class="panel" style="margin-top:18px">
+        <p class="eyebrow">SYNC</p><h2>기기 간 동기화 (PC ↔ 폰)</h2>
+        <p class="muted">무료 클라우드(Supabase)에 연결하면 PC와 폰에서 같은 데이터를 사용합니다. 아래 두 칸을 채우고 [연결 저장]을 누르세요. 같은 값을 폰에도 한 번만 입력하면 끝!</p>
+        <div class="form-grid" style="margin-top:14px">
+          <label class="span-2">Supabase 프로젝트 URL<input id="syncUrl" placeholder="https://xxxxx.supabase.co" /></label>
+          <label class="span-2">API Key (anon public)<input id="syncKey" type="password" placeholder="eyJhbGciOi… (비밀번호처럼 보관하세요)" /></label>
+        </div>
+        <div class="button-stack" style="grid-template-columns:repeat(3,1fr);display:grid;gap:9px">
+          <button class="btn primary" id="syncSaveBtn">연결 저장</button>
+          <button class="btn secondary" id="syncPullBtn">☁️ 지금 가져오기</button>
+          <button class="btn secondary" id="syncPushBtn">⬆ 지금 보내기</button>
+        </div>
+        <div class="sync-status" id="syncStatus">동기화 미설정 — 이 기기에만 저장 중입니다.</div>
+        <ol class="sync-steps">
+          <li>supabase.com 가입 → New project 생성 (무료)</li>
+          <li>왼쪽 SQL Editor에서 가이드 문서의 SQL 한 번 실행</li>
+          <li>Settings → API에서 URL과 anon key 복사 → 위에 붙여넣기</li>
+        </ol>
+      </article>
+      <article class="panel danger-zone">
+        <p class="eyebrow">RESET</p><h2>초기화</h2>
+        <p class="muted">모든 내용을 삭제합니다. 먼저 백업을 권장합니다.</p>
+        <button class="btn danger" id="resetBtn">모든 데이터 초기화</button>
+      </article>
+    </section>
+  </main>
+</div>
+
+<!-- ═══ 영업 건 모달 ═══ -->
+<div class="overlay" id="dealOverlay">
+  <div class="modal-box">
+    <div class="modal-head"><div><p class="eyebrow">SALES OPPORTUNITY</p><h2 id="dealDialogTitle">영업 건 추가</h2></div><button class="icon-btn" data-close="dealOverlay">×</button></div>
+    <div class="form-grid">
+      <label>업체명 *<input id="d_co" /></label>
+      <label>견적일<input id="d_quote" type="date" /></label>
+      <div class="f3wrap">
+        <label>모델명<input id="d_model" list="modelList" placeholder="V2EL-SDD, XGT-9000 등" /></label>
+        <label>금액 (원)<input id="d_amt" type="text" inputmode="numeric" placeholder="45000000" /><span class="amt-hint" id="d_amtHint"></span></label>
+        <label>수량<input id="d_qty" type="number" min="1" value="1" /></label>
+      </div>
+      <div class="f3wrap">
+        <label>응용<input id="d_app" list="appList" placeholder="Alloy, RoHS, Battery…" /></label>
+        <label>진행사항<select id="d_status"></select></label>
+        <label>경로<input id="d_route" list="routeList" placeholder="홈페이지, 딜러…" /></label>
+      </div>
+      <label>다음 행동<input id="d_next" placeholder="예: 견적 회신 확인 전화" /></label>
+      <label>다음 행동 예정일<input id="d_nextDate" type="date" /></label>
+    </div>
+    <fieldset class="won-fieldset">
+      <legend>수주 관리 · 신고 → 납품 → 입금</legend>
+      <div class="form-grid">
+        <div class="f3wrap">
+          <label>수주금액 (원)<input id="d_wonAmt" type="text" inputmode="numeric" /></label>
+          <label>신고 완료일<input id="d_report" placeholder="25.03.11 / 면제 등" /></label>
+          <label>납품일<input id="d_deliver" type="date" /></label>
+        </div>
+        <label>입금액 (원)<input id="d_paid" type="text" inputmode="numeric" /></label>
+        <div class="bal-line">잔금 <b id="d_bal">-</b></div>
+      </div>
+    </fieldset>
+    <div class="form-grid" style="margin-top:16px">
+      <label class="span-2">비고 추가 (저장 시 오늘 날짜로 이력에 쌓입니다)<textarea id="d_note" rows="2" placeholder="예: 연락 → 차주 중 발주 예정이라고 함"></textarea></label>
+    </div>
+    <div id="d_timelineWrap" style="display:none">
+      <p class="eyebrow" style="margin-top:18px">HISTORY · 비고 이력</p>
+      <div class="timeline" id="d_timeline"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn danger" id="d_delBtn" style="margin-right:auto;display:none">삭제</button>
+      <button class="btn ghost" data-close="dealOverlay">취소</button>
+      <button class="btn primary" id="saveDealBtn">저장</button>
+    </div>
+  </div>
+</div>
+<datalist id="modelList"></datalist>
+<datalist id="appList"></datalist>
+<datalist id="routeList"></datalist>
+
+<!-- ═══ 업무 모달 ═══ -->
+<div class="overlay" id="taskOverlay">
+  <div class="modal-box">
+    <div class="modal-head"><div><p class="eyebrow">TASK</p><h2 id="taskDialogTitle">업무 추가</h2></div><button class="icon-btn" data-close="taskOverlay">×</button></div>
+    <div class="form-grid">
+      <label class="span-2">업무명 *<input id="t_title" /></label>
+      <label>기한<input id="t_due" type="date" />
+        <span class="due-chips">
+          <button class="due-chip" data-duechip="0">오늘</button>
+          <button class="due-chip" data-duechip="1">내일</button>
+          <button class="due-chip" data-duechip="3">+3일</button>
+          <button class="due-chip" data-duechip="fri">이번 주 금</button>
+          <button class="due-chip" data-duechip="mon">다음 주 월</button>
+        </span>
+      </label>
+      <label>유형<select id="t_cat"><option>영업</option><option>서류</option><option>출고·납품</option><option>고객 대응</option><option>사내 업무</option><option>기타</option></select></label>
+      <label>인수인계 대상 (필요 시)<input id="t_handTo" placeholder="예: 서비스팀 이대리님" /></label>
+      <label>연결 영업 건<select id="t_deal"></select></label>
+      <label class="span-2">메모<textarea id="t_memo" rows="3" placeholder="요청 사항, 회신 내용, 확인할 포인트"></textarea></label>
+    </div>
+    <div class="modal-actions">
+      <button class="btn ghost" data-close="taskOverlay">취소</button>
+      <button class="btn primary" id="saveTaskBtn">저장</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+<script>
+/* ═══ 저장소 ═══ */
+const KEY = 'pengsoo-workflow-v2';
+let memStore = null, canStore = true;
+try { localStorage.setItem('__t','1'); localStorage.removeItem('__t'); } catch(e) { canStore = false; }
+
+const STATUSES = ['관심','견적','예산','수주','보류','완료','취소','실주'];
+const ACTIVE = ['관심','견적','예산','수주','보류'];
+const STATUS_GUIDE = [
+  ['관심','문의 접수·데모 논의 단계. 견적 발행 전.'],
+  ['견적','견적서 발행 완료. 회신·재확인 관리가 핵심.'],
+  ['예산','고객이 예산 확보를 진행 중. 시기 재확인 필요.'],
+  ['수주','발주·계약 확정. 신고 → 납품 → 입금을 추적.'],
+  ['보류','일시 홀딩. 재확인 날짜를 다음 행동으로 등록.'],
+  ['완료','입금까지 모두 끝난 건.'],
+  ['취소·실주','고객 취소(CANCEL) 또는 경쟁 패배(LOST).']
+];
+
+const SEED_DEALS = [{"id": "x1_0", "co": "메리테크", "quoteDate": "2025-09-29", "model": "XGT-9000 Pro", "amt": 370000000, "amtText": null, "qty": 1, "app": "PCB 이물검사", "status": "예산", "route": "홈페이지", "next": "", "nextDate": null, "notes": [{"t": 1759104000000, "txt": "삼성전자 협력사. 데이터 테스트는 완료했고 유의미한 데이터가 검출되었음.\n다만 예산 문제 때문에 작년에는 홀딩되었고, 올해 상반기 안으로 예산집행 보고 연락 주겠다고 함\n5/11 연락 -> 아직 유의미하게 진척된 사항이 없다고 함. 다만 필요는 명확하기 때문에 주기적으로 체크중이라고 함"}], "wonAmt": 0, "reportDate": "", "deliverDate": "", "paidAmt": 0, "statusAt": 1759104000000, "createdAt": 1759104000000}, {"id": "x2_1", "co": "효성중공업", "quoteDate": "2026-01-05", "model": "V2EL-SDD", "amt": 63500000, "amtText": null, "qty": 2, "app": "Coating", "status": "수주", "route": "기존 고객", "next": "", "nextDate": null, "notes": [{"t": 1767571200000, "txt": "납기 6/30까지"}], "wonAmt": 63500000, "reportDate": "", "deliverDate": "", "paidAmt": 0, "statusAt": 1767571200000, "createdAt": 1767571200000}, {"id": "x3_2", "co": "메타일렉트로", "quoteDate": "2026-01-05", "model": "VGS", "amt": 33000000, "amtText": null, "qty": 1, "app": "Gold", "status": "완료", "route": "기존 고객", "next": "", "nextDate": null, "notes": [], "wonAmt": 33000000, "reportDate": "면제", "deliverDate": "2026-04-30", "paidAmt": 33000000, "statusAt": 1767571200000, "createdAt": 1767571200000}, {"id": "x4_3", "co": "비전테크 화성공장", "quoteDate": "2026-01-05", "model": "V2EL-LT", "amt": 22000000, "amtText": null, "qty": 1, "app": "Scrap", "status": "완료", "route": "고객 소개", "next": "", "nextDate": null, "notes": [{"t": 1767571200000, "txt": "SG금속 소개 건"}], "wonAmt": 22000000, "reportDate": "2025-12-11", "deliverDate": "2026-03-30", "paidAmt": 22000000, "statusAt": 1767571200000, "createdAt": 1767571200000}, {"id": "x5_4", "co": "코오롱생명과학 김천공장", "quoteDate": "2026-01-05", "model": "V2CA", "amt": 45000000, "amtText": null, "qty": 1, "app": "Geochem", "status": "완료", "route": "기존 고객", "next": "", "nextDate": null, "notes": [{"t": 1767571200000, "txt": "추가구매 건"}], "wonAmt": 45000000, "reportDate": "2026-03-26", "deliverDate": "2026-03-25", "paidAmt": 45000000, "statusAt": 1767571200000, "createdAt": 1767571200000}, {"id": "x6_5", "co": "에바싸이클", "quoteDate": "2026-01-12", "model": "V2CA", "amt": 48000000, "amtText": null, "qty": 1, "app": "Battery", "status": "완료", "route": "고객 소개", "next": "", "nextDate": null, "notes": [{"t": 1768176000000, "txt": "포스코에서 보고 연락 주었다고 함 / 필드 스탠드 입고 되면 납품 가야함!!! -> 스탠드까지 납품 완료"}], "wonAmt": 48000000, "reportDate": "2026-02-26", "deliverDate": "2026-03-09", "paidAmt": 48000000, "statusAt": 1768176000000, "createdAt": 1768176000000}, {"id": "x7_6", "co": "국립중앙박물관", "quoteDate": "2026-01-21", "model": "V2CA", "amt": 47300000, "amtText": null, "qty": 1, "app": "박물관", "status": "견적", "route": "딜러", "next": "", "nextDate": null, "notes": [{"t": 1768953600000, "txt": "강대진 부장 소개 / 딜러 : 비엔와이랩"}], "wonAmt": 0, "reportDate": "", "deliverDate": "", "paidAmt": 0, "statusAt": 1768953600000, "createdAt": 1768953600000}, {"id": "x8_7", "co": "EST", "quoteDate": "2026-01-26", "model": "V2EL-LT", "amt": 20000000, "amtText": null, "qty": 1, "app": "", "status": "견적", "route": "딜러", "next": "", "nextDate": null, "notes": [{"t": 1769385600000, "txt": "딜러 : 블루시스템"}], "wonAmt": 0, "reportDate": "", "deliverDate": "", "paidAmt": 0, "statusAt": 1769385600000, "createdAt": 1769385600000}, {"id": "x9_8", "co": "플란제코리아", "quoteDate": "2026-01-26", "model": "V2EL-SDD", "amt": 40000000, "amtText": null, "qty": 1, "app": "", "status": "견적", "route": "", "next": "", "nextDate": null, "notes": [], "wonAmt": 0, "reportDate": "", "deliverDate": "", "paidAmt": 0, "statusAt": 1769385600000, "createdAt": 1769385600000}, {"id": "x10_9", "co": "효성티앤씨", "quoteDate": "2026-01-26", "model": "V2EL-SDD", "amt": 40000000, "amtText": null, "qty": 1, "app": "PMI, Geochem", "status": "수주", "route": "홈페이지", "next": "", "nextDate": null, "notes": [], "wonAmt": 37000000, "reportDate": "", "deliverDate": "", "paidAmt": 0, "statusAt": 1769385600000, "createdAt": 1769385600000}, {"id": "x11_10", "co": "서울대학교", "quoteDate": "2026-01-27", "model": "V2EL-LT", "amt": 22000000, "amtText": null, "qty": 1, "app": "Geochem", "status": "견적", "route": "홈페이지", "next": "", "nextDate": null, "notes": [], "wonAmt": 0, "reportDate": "", "deliverDate": "", "paidAmt": 0, "statusAt": 1769472000000, "createdAt": 1769472000000}, {"id": "x12_11", "co": "마스콤", "quoteDate": "2026-01-28", "model": "V2EL-SDD", "amt": 32000000, "amtText": null, "qty": 1, "app": "", "status": "견적", "route": "딜러", "next": "", "nextDate": null, "notes": [{"t": 1769558400000, "txt": "딜러 : 티오이에스"}], "wonAmt": 0, "reportDate": "", "deliverDate": "", "paidAmt": 0, "statusAt": 1769558400000, "createdAt": 1769558400000}, {"id": "x13_12", "co": "예안케미칼", "quoteDate": "2026-01-28", "model": "V2EL-SDD", "amt": 32000000, "amtText": null, "qty": 1, "app": "RoHS", "status": "견적", "route": "딜러", "next": "", "nextDate": null, "notes": [{"t": 1769558400000, "txt": "딜러 : 월드"}], "wonAmt": 0, "reportDate": "", "deliverDate": "", "paidAmt": 0, "statusAt": 1769558400000, "createdAt": 1769558400000}, {"id": "x14_13", "co": "한국화학연구원", "quoteDate": "2026-02-02", "model": "V2MR", "amt": 57000000, "amtText": null, "qty": 1, "app": "Geochem", "status": "견적", "route": "딜러", "next": "", "nextDate": null, "notes": [{"t": 1769990400000, "txt": "딜러 : 루크사이언스"}], "wonAmt": 0, "reportDate": "", "deliverDate": "", "paidAmt": 0, "statusAt": 1769990400000, "createdAt": 1769990400000}, {"id": "x15_14", "co": "상주시 농업기술센터", "quoteDate": "2026-02-04", "model": "V2CA", "amt": 41000000, "amtText": null, "qty": 1, "app": "Geochem", "status": "취소", "route": "딜러", "next": "", "nextDate": null, "notes": [{"t": 1770163200000, "txt": "딜러 : 아시아과학상사 / ICP급의 데이터를 원함…"}], "wonAmt": 0, "reportDate": "", "deliverDate": "", "paidAmt": 0, "statusAt": 1770163200000, "createdAt": 1770163200000}, {"id": "x16_15", "co": "현대 EP", "quoteDate": "2026-02-04", "model": "V2CA", "amt": 45000000, "amtText": null, "qty": 1, "app": "RoHS", "status": "실주", "route": "기존 고객", "next": "", "nextDate": null, "notes": [{"t": 1770163200000, "txt": "타사 장비 구매"}], "wonAmt": 0, "reportDate": "", "deliverDate": "", "paidAmt": 0, "statusAt": 1770163200000, "createdAt": 1770163200000}, {"id": "x17_16", "co": "동양특수금속", "quoteDate": "2026-02-05", "model": "V2EL-SDD", "amt": 35000000, "amtText": null, "qty": 1, "app": "Coating", "status": "예산", "route": "고객 소개", "next": "", "nextDate": null, "notes": [{"t": 1770249600000, "txt": "효성 1차 협력사\n예산작업 진행예정이라고 연락 와서 견적 다시 보냄 (6/11)"}], "wonAmt": 0, "reportDate": "", "deliverDate": "", "paidAmt": 0, "statusAt": 1770249600000, "createdAt": 1770249600000}, {"id": "x18_17", "co": "서연오토비전", "quoteDate": "2026-02-06", "model": "V2EL-SDD", "amt": 40000000, "amtText": null, "qty": 1, "app": "RoHS", "status": "견적", "route": "홈페이지", "next": "", "nextDate": null, "notes": [], "wonAmt": 0, "reportDate": "", "deliverDate": "", "paidAmt": 0, "statusAt": 1770336000000, "createdAt": 1770336000000}, {"id": "x19_18", "co": "한국생산기술연구원", "quoteDate": "2026-02-11", "model": "V2EL-SDD", "amt": 40000000, "amtText": null, "qty": 1, "app": "Geochem", "status": "견적", "route": "홈페이지", "next": "", "nextDate": null, "notes": [], "wonAmt": 0, "reportDate": "", "deliverDate": "", "paidAmt": 0, "statusAt": 1770768000000, "createdAt": 1770768000000}, {"id": "x20_19", "co": "서울주얼리지원센터", "quoteDate": "2026-02-13", "model": "VGS", "amt": 34000000, "amtText": null, "qty": 1, "app": "Gold", "status": "견적", "route": "딜러", "next": "", "nextDate": null, "notes": [{"t": 1770940800000, "txt": "딜러 : 월드"}], "wonAmt": 0, "reportDate": "", "deliverDate": "", "paidAmt": 0, "statusAt": 1770940800000, "createdAt": 1770940800000}, {"id": "x21_20", "co": "뉴엠텍", "quoteDate": "2026-02-23", "model": "V2EL-LT", "amt": 20000000, "amtText": null, "qty": 1, "app": "PMI", "status": "견적", "route": "딜러", "next": "", "nextDate": null, "notes": [{"t": 1771804800000, "txt": "딜러 : 블루시스템"}], "wonAmt": 0, "reportDate": "", "deliverDate": "", "paidAmt": 0, "statusAt": 1771804800000, "createdAt": 1771804800000}, {"id": "x22_21", "co": "대광수지", "quoteDate": "2026-02-24", "model": "V2EL-SDD", "amt": 37000000, "amtText": null, "qty": 1, "app": "RoHS", "status": "견적", "route": "홈페이지", "next": "", "nextDate": null, "notes": [], "wonAmt": 0, "reportDate": "", "deliverDate": "", "paidAmt": 0, "statusAt": 1771891200000, "createdAt": 1771891200000}, {"id": "x23_22", "co": "에코비트", "quoteDate": "2026-02-24", "model": "V2EL-SDD", "amt": 42000000, "amtText": null, "qty": 1, "app": "Geochem", "status": "견적", "route": "홈페이지", "next": "", "nextDate": null, "notes": [], "wonAmt": 0, "reportDate": "", "deliverDate": "", "paidAmt": 0, "statusAt": 1771891200000, "createdAt": 1771891200000}, {"id": "x24_23", "co": "마그넥스", "quoteDate": "2026-02-25", "model": "V2EL-SDD", "amt": 38000000, "amtText": null, "qty": 1, "app": "PMI", "status": "견적", "route": "홈페이지", "next": "", "nextDate": null, "notes": [], "wonAmt": 0, "reportDate": "", "deliverDate": "", "paidAmt": 0, "statusAt": 1771977600000, "createdAt": 1771977600000}, {"id": "x25_24", "co": "한강문화재연구원", "quoteDate": "2026-03-09", "model": "V2MR", "amt": 64000000, "amtText": null, "qty": 1, "app": "Geocgem, Soil", "status": "견적", "route": "홈페이지", "next": "", "nextDate": null, "notes": [], "wonAmt": 0, "reportDate": "", "deliverDate": "", "paidAmt": 0, "statusAt": 1773014400000, "createdAt": 1773014400000}, {"id": "x26_25", "co": "VM PLUS", "quoteDate": "2026-03-11", "model": "V2EL-SDD", "amt": 32000000, "amtText": null, "qty": 1, "app": "Battery", "status": "보류", "route": "딜러", "next": "", "nextDate": null, "notes": [{"t": 1773187200000, "txt": "딜러 : 월드 / 엠텍솔루션과 경쟁 / 현재 잠깐 홀딩 상태임"}], "wonAmt": 0, "reportDate": "", "deliverDate": "", "paidAmt": 0, "statusAt": 1773187200000, "createdAt": 1773187200000}, {"id": "x27_26", "co": "동국씨엠", "quoteDate": "2026-03-13", "model": "V2CA", "amt": 48000000, "amtText": null, "qty": 1, "app": "Battery", "status": "견적", "route": "홈페이지", "next": "", "nextDate": null, "notes": [], "wonAmt": 0, "reportDate": "", "deliverDate": "", "paidAmt": 0, "statusAt": 1773360000000, "createdAt": 1773360000000}, {"id": "x28_27", "co": "한국샤먼텅스텐", "quoteDate": "2026-03-16", "model": "V2EL-SDD", "amt": 32000000, "amtText": null, "qty": 1, "app": "PMI", "status": "취소", "route": "딜러", "next": "", "nextDate": null, "notes": [{"t": 1773619200000, "txt": "딜러 : 서라벌과학상사 / 기존 가지고 있는 히타치 제품 수리해서 사용 예정"}], "wonAmt": 0, "reportDate": "", "deliverDate": "", "paidAmt": 0, "statusAt": 1773619200000, "createdAt": 1773619200000}, {"id": "x29_28", "co": "삼우금속", "quoteDate": "2026-03-16", "model": "V2EL-SDD", "amt": 35000000, "amtText": null, "qty": 1, "app": "Coating", "status": "완료", "route": "고객 소개", "next": "", "nextDate": null, "notes": [{"t": 1773619200000, "txt": "효성 협력사 / 솔렌 통해서 진행해보고자 했으나 진행 불가하다고 연락 왔음. 전달함\n계약금 마련해서 연락 주겠다고 함"}], "wonAmt": 35000000, "reportDate": "2026-06-11", "deliverDate": "2026-06-18", "paidAmt": 35000000, "statusAt": 1773619200000, "createdAt": 1773619200000}, {"id": "x30_29", "co": "삼성SDI", "quoteDate": "2026-03-17", "model": "XGT-9000 Expert", "amt": 450000000, "amtText": null, "qty": 1, "app": "금속 내 이물", "status": "취소", "route": "기존 고객", "next": "", "nextDate": null, "notes": [{"t": 1773705600000, "txt": "히타치 제품과 우리 제품을 사용 중인 곳. 미국 수출이 히타치는 안된다고 함. 우리는 가능한 것 확인\n데이터 테스트는 완료했고, 현재 샘플 회수 후 내부적으로 확인 과정을 거치고 있음\n5/11 담당자에게 연락 했으나 답X, 문자 남겨두었음\n데이터는 잘 나왔으나, 해당 장비를 도입하게 되면 다른 나라 모든 장비들을 교체해야하는 문제로 구매 하지 않는 것으로 결정되었다고 함"}], "wonAmt": 0, "reportDate": "", "deliverDate": "", "paidAmt": 0, "statusAt": 1773705600000, "createdAt": 1773705600000}, {"id": "x31_30", "co": "극지연구소", "quoteDate": "2026-03-18", "model": "V2CA", "amt": 54500000, "amtText": null, "qty": 1, "app": "Geochem", "status": "예산", "route": "고객 소개", "next": "", "nextDate": null, "notes": [{"t": 1773792000000, "txt": "해양과학기술원 소개 / 2027년 진행 예정인 건이며, 현재 예산 올린 것은 통과 되었다고 함."}], "wonAmt": 0, "reportDate": "", "deliverDate": "", "paidAmt": 0, "statusAt": 1773792000000, "createdAt": 1773792000000}, {"id": "x32_31", "co": "상현메탈", "quoteDate": "2026-03-18", "model": "V2EL-SDD", "amt": 35000000, "amtText": null, "qty": 1, "app": "Coating", "status": "견적", "route": "고객 소개", "next": "", "nextDate": null, "notes": [{"t": 1773792000000, "txt": "효성 협력사\n5/11 연락 -> 견적 바탕으로 내부 검토중이라고 함. 완료되면 다시 연락 주겠다고 하였음"}], "wonAmt": 0, "reportDate": "", "deliverDate": "", "paidAmt": 0, "statusAt": 1773792000000, "createdAt": 1773792000000}, {"id": "x33_32", "co": "국립수목원 산림박물관", "quoteDate": "2026-03-18", "model": "V2CA", "amt": 52000000, "amtText": null, "qty": 1, "app": "박물관", "status": "견적", "route": "홈페이지", "next": "", "nextDate": null, "notes": [], "wonAmt": 0, "reportDate": "", "deliverDate": "", "paidAmt": 0, "statusAt": 1773792000000, "createdAt": 1773792000000}, {"id": "x34_33", "co": "대동금속", "quoteDate": "2026-03-19", "model": "V2EL-SDD", "amt": 32000000, "amtText": null, "qty": 1, "app": "Coating", "status": "수주", "route": "딜러", "next": "", "nextDate": null, "notes": [{"t": 1773878400000, "txt": "딜러 : 엔비티\n공장 내 화재로 인해 납기 딜레이 되고 있음"}], "wonAmt": 32000000, "reportDate": "", "deliverDate": "", "paidAmt": 9600000, "statusAt": 1773878400000, "createdAt": 1773878400000}, {"id": "x35_34", "co": "금호타이어", "quoteDate": "2026-03-20", "model": "V2EL-SDD", "amt": 34000000, "amtText": null, "qty": 1, "app": "PMI", "status": "견적", "route": "딜러", "next": "", "nextDate": null, "notes": [{"t": 1773964800000, "txt": "딜러 : 에이치아이씨"}], "wonAmt": 0, "reportDate": "", "deliverDate": "", "paidAmt": 0, "statusAt": 1773964800000, "createdAt": 1773964800000}, {"id": "x36_35", "co": "목포대학교", "quoteDate": "2026-03-20", "model": "V2EL-SDD", "amt": 33000000, "amtText": null, "qty": 1, "app": "Geochem", "status": "견적", "route": "딜러", "next": "", "nextDate": null, "notes": [{"t": 1773964800000, "txt": "딜러 : 루에이블"}], "wonAmt": 0, "reportDate": "", "deliverDate": "", "paidAmt": 0, "statusAt": 1773964800000, "createdAt": 1773964800000}, {"id": "x37_36", "co": "삼성전기", "quoteDate": "2026-03-20", "model": "V2CA", "amt": 54000000, "amtText": null, "qty": 1, "app": "RoHS", "status": "예산", "route": "홈페이지", "next": "", "nextDate": null, "notes": [{"t": 1773964800000, "txt": "Pb 함량 및 Cr 함량 검출 용도"}], "wonAmt": 0, "reportDate": "", "deliverDate": "", "paidAmt": 0, "statusAt": 1773964800000, "createdAt": 1773964800000}, {"id": "x38_37", "co": "제일금속", "quoteDate": "2026-03-20", "model": "V2EL-LT", "amt": 22000000, "amtText": null, "qty": 1, "app": "Scrap", "status": "견적", "route": "고객 소개", "next": "", "nextDate": null, "notes": [{"t": 1773964800000, "txt": "구매부 담당자에게 연락옴, 소개 건"}], "wonAmt": 0, "reportDate": "", "deliverDate": "", "paidAmt": 0, "statusAt": 1773964800000, "createdAt": 1773964800000}, {"id": "x39_38", "co": "세계문화유산감정사협회", "quoteDate": "2026-03-24", "model": "XGT-9000 Expert", "amt": 480000000, "amtText": null, "qty": 1, "app": "문화재", "status": "견적", "route": "홈페이지", "next": "", "nextDate": null, "notes": [{"t": 1774310400000, "txt": "문화유산 감정 협회를 만들어서 문화재 관련 감정을 같은 장비로 진행하는 작업을 해보고자 함.\n현재 예산을 위해 견적을 보낸 상태임\n5/11 연락 -> 별다른 업데이트 사항은 아직 없다고 함\n5/22 포럼 참여하여 장비 소개하였음"}], "wonAmt": 0, "reportDate": "", "deliverDate": "", "paidAmt": 0, "statusAt": 1774310400000, "createdAt": 1774310400000}, {"id": "x40_39", "co": "KCC글라스 가평공장", "quoteDate": "2026-03-25", "model": "V2CA", "amt": 54000000, "amtText": null, "qty": 1, "app": "Geochem", "status": "예산", "route": "홈페이지", "next": "", "nextDate": null, "notes": [{"t": 1774396800000, "txt": "광물 내 철, 알루미늄 등의 함량을 보고자 함\n현재 구매사이트 통해 1차 예산 견적 참여 완료\n5/14 딜러 통해 견적 문의 들어온 것으로 보아 내부적으로 가격 조사하는 것 같음.\n~5/22까지 입찰 진행하여 투찰함. 아직 결과는 나오지 않았음 \n낙찰 처리는 되어있는데 발주가 아직 안남"}], "wonAmt": 0, "reportDate": "", "deliverDate": "", "paidAmt": 0, "statusAt": 1774396800000, "createdAt": 1774396800000}, {"id": "x41_40", "co": "엘레멘트 코리아", "quoteDate": "2026-03-25", "model": "V2EL-SDD", "amt": 40000000, "amtText": null, "qty": 1, "app": "RoHS", "status": "견적", "route": "홈페이지", "next": "", "nextDate": null, "notes": [], "wonAmt": 0, "reportDate": "", "deliverDate": "", "paidAmt": 0, "statusAt": 1774396800000, "createdAt": 1774396800000}, {"id": "x42_41", "co": "㈜성우", "quoteDate": "2026-03-27", "model": "V2CA", "amt": 40000000, "amtText": null, "qty": 1, "app": "Geochem", "status": "견적", "route": "딜러", "next": "", "nextDate": null, "notes": [{"t": 1774569600000, "txt": "딜러 : 디케이엔씨"}], "wonAmt": 0, "reportDate": "", "deliverDate": "", "paidAmt": 0, "statusAt": 1774569600000, "createdAt": 1774569600000}, {"id": "x43_42", "co": "한국지질자원연구원", "quoteDate": "2026-04-03", "model": "V2CA", "amt": 53800000, "amtText": null, "qty": 1, "app": "Geochem", "status": "예산", "route": "기존 고객", "next": "", "nextDate": null, "notes": [{"t": 1775174400000, "txt": "현재 예산 확보를 위한 서류 준비 완료, 제출 후 결과까지 대기 중\n서류 승인 완료되었음. 입찰 최종 서류 검토 완료. 우리 사양으로 올릴 예정 (이길재 박사가 책임자임)"}], "wonAmt": 0, "reportDate": "", "deliverDate": "", "paidAmt": 0, "statusAt": 1775174400000, "createdAt": 1775174400000}, {"id": "x44_43", "co": "TMC", "quoteDate": "2026-04-08", "model": "V2EL-LT", "amt": 24000000, "amtText": null, "qty": 1, "app": "PMI", "status": "견적", "route": "홈페이지", "next": "", "nextDate": null, "notes": [], "wonAmt": 0, "reportDate": "", "deliverDate": "", "paidAmt": 0, "statusAt": 1775606400000, "createdAt": 1775606400000}, {"id": "x45_44", "co": "제일폴리켐㈜", "quoteDate": "2026-04-09", "model": "V2EL-SDD", "amt": 38000000, "amtText": null, "qty": 1, "app": "RoHS", "status": "견적", "route": "홈페이지", "next": "", "nextDate": null, "notes": [], "wonAmt": 0, "reportDate": "", "deliverDate": "", "paidAmt": 0, "statusAt": 1775692800000, "createdAt": 1775692800000}, {"id": "x46_45", "co": "시지메드텍", "quoteDate": "2026-04-10", "model": "V2EL-SDD", "amt": 35000000, "amtText": null, "qty": 1, "app": "PMI", "status": "수주", "route": "홈페이지", "next": "", "nextDate": null, "notes": [{"t": 1775779200000, "txt": "치과/정형외과 용 의료기기 제작 업제, 3개 업체 경쟁 (브루커, 싸이앱스, 에비던트) 최종 결정은 우리 장비로 할 예정\n구매사이트 가입 후 가격 투찰 진행, 내부 결재 중"}], "wonAmt": 35000000, "reportDate": "", "deliverDate": "", "paidAmt": 0, "statusAt": 1775779200000, "createdAt": 1775779200000}, {"id": "x47_46", "co": "SSF", "quoteDate": "2026-04-20", "model": "V2EL-SDD", "amt": 32000000, "amtText": null, "qty": 1, "app": "PMI", "status": "견적", "route": "딜러", "next": "", "nextDate": null, "notes": [{"t": 1776643200000, "txt": "딜러 : 카스"}], "wonAmt": 0, "reportDate": "", "deliverDate": "", "paidAmt": 0, "statusAt": 1776643200000, "createdAt": 1776643200000}, {"id": "x48_47", "co": "㈜경부금속", "quoteDate": "2026-04-22", "model": "V2EL-SDD", "amt": 35000000, "amtText": null, "qty": 1, "app": "Coating", "status": "견적", "route": "고객 소개", "next": "", "nextDate": null, "notes": [{"t": 1776816000000, "txt": "효성 협력사"}], "wonAmt": 0, "reportDate": "", "deliverDate": "", "paidAmt": 0, "statusAt": 1776816000000, "createdAt": 1776816000000}, {"id": "x49_48", "co": "와이엔에스전자", "quoteDate": "2026-04-28", "model": "V2EL-SDD", "amt": 39000000, "amtText": null, "qty": 1, "app": "RoHS", "status": "견적", "route": "대표 번호", "next": "", "nextDate": null, "notes": [], "wonAmt": 0, "reportDate": "", "deliverDate": "", "paidAmt": 0, "statusAt": 1777334400000, "createdAt": 1777334400000}, {"id": "x50_49", "co": "KCL", "quoteDate": "2026-04-23", "model": "V2CA", "amt": 42000000, "amtText": null, "qty": 1, "app": "Children Playground", "status": "수주", "route": "기존 고객", "next": "", "nextDate": null, "notes": [{"t": 1776902400000, "txt": "동일 차장님 전달 건"}], "wonAmt": 42000000, "reportDate": "", "deliverDate": "", "paidAmt": 9600000, "statusAt": 1776902400000, "createdAt": 1776902400000}, {"id": "x51_50", "co": "주영산업", "quoteDate": "2026-04-29", "model": "V2EL-LT", "amt": 24000000, "amtText": null, "qty": 1, "app": "Scrap", "status": "견적", "route": "전시회", "next": "", "nextDate": null, "notes": [], "wonAmt": 0, "reportDate": "", "deliverDate": "", "paidAmt": 0, "statusAt": 1777420800000, "createdAt": 1777420800000}, {"id": "x52_51", "co": "AU패일리", "quoteDate": "2026-04-29", "model": "XGT-9000 Pro", "amt": 0, "amtText": "소개", "qty": 1, "app": "Gold", "status": "견적", "route": "기존 고객", "next": "", "nextDate": null, "notes": [{"t": 1777420800000, "txt": "금 내 텅스텐 혼입 확인 응용의 건 / 샘플을 두고 와서 추후 샘플 들고 5월 중 재방문 예정\n대략적인 가격대만 3억 중~후반 사이라고 언급하였음"}], "wonAmt": 0, "reportDate": "", "deliverDate": "", "paidAmt": 0, "statusAt": 1777420800000, "createdAt": 1777420800000}, {"id": "x53_52", "co": "탈렌트엘엔지", "quoteDate": "2026-04-30", "model": "V2EL-SDD", "amt": 39000000, "amtText": null, "qty": 1, "app": "PMI", "status": "견적", "route": "대표 번호", "next": "", "nextDate": null, "notes": [{"t": 1777507200000, "txt": "조선기자재 업체로 파이프/배관 등의 금속 성분 분석 용도. 5월 첫째주 데모 예정\n데모 완료 후 5/7에 견적 발송하였음"}], "wonAmt": 0, "reportDate": "", "deliverDate": "", "paidAmt": 0, "statusAt": 1777507200000, "createdAt": 1777507200000}, {"id": "x54_53", "co": "대신에스티에스", "quoteDate": "2026-05-06", "model": "V2EL-LT", "amt": 21500000, "amtText": null, "qty": 1, "app": "Scrap", "status": "완료", "route": "기존 고객", "next": "", "nextDate": null, "notes": [{"t": 1778025600000, "txt": "계약서 작성 중"}], "wonAmt": 21500000, "reportDate": "2026-05-26", "deliverDate": "2026-05-27", "paidAmt": 21500000, "statusAt": 1778025600000, "createdAt": 1778025600000}, {"id": "x55_54", "co": "세강개발", "quoteDate": "2026-05-06", "model": "V2EL-SDD", "amt": 34000000, "amtText": null, "qty": 1, "app": "Scrap", "status": "완료", "route": "고객 소개", "next": "", "nextDate": null, "notes": [{"t": 1778025600000, "txt": "계약서 작성 중"}], "wonAmt": 34000000, "reportDate": "", "deliverDate": "2026-06-09", "paidAmt": 34000000, "statusAt": 1778025600000, "createdAt": 1778025600000}, {"id": "x56_55", "co": "한국제품안전관리원", "quoteDate": "2026-05-08", "model": "V2EL-SDD", "amt": 40000000, "amtText": null, "qty": 1, "app": "RoHS", "status": "실주", "route": "고객 소개", "next": "", "nextDate": null, "notes": [{"t": 1778198400000, "txt": "FITI에서 소개받아 홈페이지 문의 남겨준 곳임.  / 예산이 부가세 포함 2800이라서 고민해보고 연락 준다고 함\n예산 부족으로 써모 장비를 구매하려고 하는 것 같음. \n카메라 기능이 있는 규격으로 공고 올라왔는데… 이게 되려나 모르겠음…"}], "wonAmt": 0, "reportDate": "", "deliverDate": "", "paidAmt": 0, "statusAt": 1778198400000, "createdAt": 1778198400000}, {"id": "x57_56", "co": "한선엔지니어링", "quoteDate": "2026-05-12", "model": "V2EL-SDD", "amt": 32000000, "amtText": null, "qty": 1, "app": "PMI", "status": "견적", "route": "딜러", "next": "", "nextDate": null, "notes": [{"t": 1778544000000, "txt": "23년도 말에 진행했다가 잠정 중단되었던 건이었음. 재견적 요청"}], "wonAmt": 0, "reportDate": "", "deliverDate": "", "paidAmt": 0, "statusAt": 1778544000000, "createdAt": 1778544000000}, {"id": "x58_57", "co": "㈜금비", "quoteDate": "2026-05-15", "model": "V2EL-SDD", "amt": 38000000, "amtText": null, "qty": 1, "app": "RoHS", "status": "견적", "route": "홈페이지", "next": "", "nextDate": null, "notes": [{"t": 1778803200000, "txt": "RoHS 응용으로 견적 문의 와서 견적 작성 후 메일 발송"}], "wonAmt": 0, "reportDate": "", "deliverDate": "", "paidAmt": 0, "statusAt": 1778803200000, "createdAt": 1778803200000}, {"id": "x59_58", "co": "혜빈보석 (솔루션렌탈)", "quoteDate": "2026-05-20", "model": "VGP", "amt": 23000000, "amtText": null, "qty": 1, "app": "Gold", "status": "견적", "route": "딜러", "next": "", "nextDate": null, "notes": [{"t": 1779235200000, "txt": "솔루션렌탈 문의 건 / 구매 확률은 그리 높지 않다고 함"}], "wonAmt": 0, "reportDate": "", "deliverDate": "", "paidAmt": 0, "statusAt": 1779235200000, "createdAt": 1779235200000}, {"id": "x60_59", "co": "파세코 (화인싸이언스)", "quoteDate": "2026-05-20", "model": "V2EL-LT", "amt": 20000000, "amtText": null, "qty": 1, "app": "PMI", "status": "견적", "route": "딜러", "next": "", "nextDate": null, "notes": [{"t": 1779235200000, "txt": "작년부터 진행했던 건임 / 진행된다면 귀금속 무상으로 넣어줘야 함"}], "wonAmt": 0, "reportDate": "", "deliverDate": "", "paidAmt": 0, "statusAt": 1779235200000, "createdAt": 1779235200000}, {"id": "x61_60", "co": "경기도소방학교", "quoteDate": "2026-05-21", "model": "V2EL-SDD", "amt": 39000000, "amtText": null, "qty": 1, "app": "Alloy,Geochem", "status": "예산", "route": "홈페이지", "next": "", "nextDate": null, "notes": [{"t": 1779321600000, "txt": "타사에서 근무할 때 델타 장비 써본적 있다고 함. \n화재 후 남은 곳의 토양 및 금속 조사 용도로 견적 요청하였음\n예산이 6600정도인데 다 털고 싶다고 해서 코어모델, 악세서리 추가해서 견적 발송함"}], "wonAmt": 0, "reportDate": "", "deliverDate": "", "paidAmt": 0, "statusAt": 1779321600000, "createdAt": 1779321600000}, {"id": "x62_61", "co": "삼성전기 부산사업장", "quoteDate": "2026-05-21", "model": "V2CA", "amt": 48000000, "amtText": null, "qty": 1, "app": "Coating", "status": "수주", "route": "고객 소개", "next": "", "nextDate": null, "notes": [{"t": 1779321600000, "txt": "소개 받은 제품이라고 함. 소개는 VCR로 받은 듯…?\nTa 베이스에서 Ir 코팅 측정 용도."}], "wonAmt": 48000000, "reportDate": "", "deliverDate": "", "paidAmt": 0, "statusAt": 1779321600000, "createdAt": 1779321600000}, {"id": "x63_62", "co": "덕창자원 (쓰리아이솔루션)", "quoteDate": "2026-05-26", "model": "V2EL-SDD", "amt": 32000000, "amtText": null, "qty": 1, "app": "Alloy", "status": "견적", "route": "딜러", "next": "", "nextDate": null, "notes": [], "wonAmt": 0, "reportDate": "", "deliverDate": "", "paidAmt": 0, "statusAt": 1779753600000, "createdAt": 1779753600000}, {"id": "x64_63", "co": "삼성전기 베트남", "quoteDate": "2026-05-28", "model": "V2CA", "amt": 31300, "amtText": null, "qty": 1, "app": "Coating", "status": "예산", "route": "고객 소개", "next": "", "nextDate": null, "notes": [{"t": 1779926400000, "txt": "삼성전기 부산 사업장과 동일한 응용과 모델로 달러 견적 요청 / FOB 조건으로 진행될 에정임."}], "wonAmt": 0, "reportDate": "", "deliverDate": "", "paidAmt": 0, "statusAt": 1779926400000, "createdAt": 1779926400000}, {"id": "x65_64", "co": "남도이엔지", "quoteDate": null, "model": "V2EL-LT", "amt": 20000000, "amtText": null, "qty": 1, "app": "", "status": "수주", "route": "기존 고객", "next": "", "nextDate": null, "notes": [{"t": 1735689600000, "txt": "동일 차장님 전달 건"}], "wonAmt": 20000000, "reportDate": "", "deliverDate": "", "paidAmt": 0, "statusAt": 1735689600000, "createdAt": 1735689600000}, {"id": "x66_65", "co": "성창테크", "quoteDate": "2026-06-01", "model": "V2EL-SDD", "amt": 32000000, "amtText": null, "qty": 1, "app": "Coating", "status": "수주", "route": "딜러", "next": "", "nextDate": null, "notes": [{"t": 1780272000000, "txt": "효성 소개 건 / 발주서는 받았고 계약서 대기중\n딜러 : 엔비티"}], "wonAmt": 32000000, "reportDate": "", "deliverDate": "", "paidAmt": 0, "statusAt": 1780272000000, "createdAt": 1780272000000}, {"id": "x67_66", "co": "서부스텐", "quoteDate": "2026-06-05", "model": "V2EL-SDD", "amt": 26000000, "amtText": null, "qty": 1, "app": "Scrap", "status": "수주", "route": "기존 고객", "next": "", "nextDate": null, "notes": [{"t": 1780617600000, "txt": "보상판매"}], "wonAmt": 26000000, "reportDate": "", "deliverDate": "2026-06-30", "paidAmt": 0, "statusAt": 1780617600000, "createdAt": 1780617600000}, {"id": "x68_67", "co": "신성금속", "quoteDate": "2026-06-15", "model": "V2EL-LT", "amt": 22000000, "amtText": null, "qty": 1, "app": "Scrap", "status": "수주", "route": "기존 고객", "next": "", "nextDate": null, "notes": [{"t": 1781481600000, "txt": "동일 차장님 전달 건"}], "wonAmt": 22000000, "reportDate": "", "deliverDate": "", "paidAmt": 0, "statusAt": 1781481600000, "createdAt": 1781481600000}, {"id": "x69_68", "co": "동원자원", "quoteDate": "2026-06-15", "model": "V2EL-LT", "amt": 22000000, "amtText": null, "qty": 1, "app": "Scrap", "status": "수주", "route": "고객 소개", "next": "", "nextDate": null, "notes": [{"t": 1781481600000, "txt": "동일 차장님 전달 건"}], "wonAmt": 22000000, "reportDate": "", "deliverDate": "", "paidAmt": 0, "statusAt": 1781481600000, "createdAt": 1781481600000}, {"id": "x70_69", "co": "스틸싸이클", "quoteDate": "2026-06-06", "model": "V2EL-SDD", "amt": 40000000, "amtText": null, "qty": 1, "app": "Geochem", "status": "견적", "route": "홈페이지", "next": "", "nextDate": null, "notes": [{"t": 1780704000000, "txt": "파우더, 슬러지 등의 분석 용도"}], "wonAmt": 0, "reportDate": "", "deliverDate": "", "paidAmt": 0, "statusAt": 1780704000000, "createdAt": 1780704000000}, {"id": "x71_70", "co": "㈜정민", "quoteDate": "2026-06-11", "model": "V2EL-SDD", "amt": 40000000, "amtText": null, "qty": 1, "app": "RoHS", "status": "견적", "route": "대표 번호", "next": "", "nextDate": null, "notes": [{"t": 1781136000000, "txt": "6개 중금속 측정 용도, MESA-50도 견적 나감"}], "wonAmt": 0, "reportDate": "", "deliverDate": "", "paidAmt": 0, "statusAt": 1781136000000, "createdAt": 1781136000000}, {"id": "x72_71", "co": "숭실대학교", "quoteDate": "2026-06-11", "model": "V2EL-SDD", "amt": 40000000, "amtText": null, "qty": 1, "app": "Scrap", "status": "견적", "route": "홈페이지", "next": "", "nextDate": null, "notes": [{"t": 1781136000000, "txt": "금속 스크랩 용도?! 라고 함. 인라인도 물어봤는데 용도에 적합하지는 않아보임"}], "wonAmt": 0, "reportDate": "", "deliverDate": "", "paidAmt": 0, "statusAt": 1781136000000, "createdAt": 1781136000000}, {"id": "x73_72", "co": "㈜화인", "quoteDate": "2026-06-12", "model": "V2EL-LT", "amt": 22000000, "amtText": null, "qty": 1, "app": "Scrap", "status": "견적", "route": "전시회", "next": "", "nextDate": null, "notes": [{"t": 1781222400000, "txt": "장비 견적 문의"}], "wonAmt": 0, "reportDate": "", "deliverDate": "", "paidAmt": 0, "statusAt": 1781222400000, "createdAt": 1781222400000}, {"id": "x74_73", "co": "㈜디더블유머티리얼즈", "quoteDate": "2026-06-15", "model": "V2CA", "amt": 50000000, "amtText": null, "qty": 1, "app": "Battery", "status": "견적", "route": "기존 고객", "next": "", "nextDate": null, "notes": [{"t": 1781481600000, "txt": "이차전지 업체. 우리 장비 쓰던 고객이 이직 후 견적 요청한 건임. \nCu, Zn 및 PMI용으로도 사용하고자 함"}], "wonAmt": 0, "reportDate": "", "deliverDate": "", "paidAmt": 0, "statusAt": 1781481600000, "createdAt": 1781481600000}, {"id": "x75_74", "co": "한국지질자원연구원", "quoteDate": "2026-06-17", "model": "V2CA", "amt": 57000000, "amtText": null, "qty": 1, "app": "Geochem", "status": "견적", "route": "기존 고객", "next": "", "nextDate": null, "notes": [{"t": 1781654400000, "txt": "예전에 타 부서에서 Delta 사용한 적 있다고 함. 조재국 박사에게 소개받고 견적 요청함\n장비+거치대(Workstation) 합쳐서 견적 발송"}], "wonAmt": 0, "reportDate": "", "deliverDate": "", "paidAmt": 0, "statusAt": 1781654400000, "createdAt": 1781654400000}, {"id": "x76_75", "co": "제이씨리소시즈 (메타루프)", "quoteDate": "2026-06-17", "model": "V2EL-SDD", "amt": 36000000, "amtText": null, "qty": 1, "app": "Battery", "status": "완료", "route": "", "next": "", "nextDate": null, "notes": [{"t": 1781654400000, "txt": "동일 차장님 전달 건"}], "wonAmt": 36000000, "reportDate": "2026-06-29", "deliverDate": "2026-07-08", "paidAmt": 36000000, "statusAt": 1781654400000, "createdAt": 1781654400000}, {"id": "x77_76", "co": "민트", "quoteDate": "2026-06-17", "model": "V2EL-LT", "amt": 22000000, "amtText": null, "qty": 1, "app": "PMI", "status": "수주", "route": "", "next": "", "nextDate": null, "notes": [{"t": 1781654400000, "txt": "동일 차장님 전달 건"}], "wonAmt": 22000000, "reportDate": "2026-07-01", "deliverDate": "", "paidAmt": 0, "statusAt": 1781654400000, "createdAt": 1781654400000}, {"id": "x78_77", "co": "DS금속", "quoteDate": "2026-06-24", "model": "V2EL-LT", "amt": 21000000, "amtText": null, "qty": 1, "app": "Scrap", "status": "수주", "route": "기존 고객", "next": "", "nextDate": null, "notes": [{"t": 1782259200000, "txt": "동일 차장님 전달 건"}], "wonAmt": 21000000, "reportDate": "", "deliverDate": "", "paidAmt": 0, "statusAt": 1782259200000, "createdAt": 1782259200000}, {"id": "x79_78", "co": "환경솔루션", "quoteDate": "2026-06-24", "model": "V2EL-LT", "amt": 22000000, "amtText": null, "qty": 1, "app": "PMI", "status": "수주", "route": "", "next": "", "nextDate": null, "notes": [{"t": 1782259200000, "txt": "동일 차장님 전달 건"}], "wonAmt": 22000000, "reportDate": "", "deliverDate": "", "paidAmt": 2000000, "statusAt": 1782259200000, "createdAt": 1782259200000}, {"id": "x80_79", "co": "현대일렉트릭 (대현)", "quoteDate": "2026-06-29", "model": "V2EL-SDD", "amt": 33000000, "amtText": null, "qty": 1, "app": "PMI", "status": "수주", "route": "딜러", "next": "", "nextDate": null, "notes": [{"t": 1782691200000, "txt": "동일 차장님 전달 건"}], "wonAmt": 33000000, "reportDate": "", "deliverDate": "", "paidAmt": 0, "statusAt": 1782691200000, "createdAt": 1782691200000}, {"id": "x81_80", "co": "에이유 패밀리", "quoteDate": "2026-06-30", "model": "VGS", "amt": 32000000, "amtText": null, "qty": 3, "app": "Gold", "status": "수주", "route": "기존 고객", "next": "", "nextDate": null, "notes": [{"t": 1782777600000, "txt": "동일 차장님 전달 건"}], "wonAmt": 96000000, "reportDate": "", "deliverDate": "", "paidAmt": 0, "statusAt": 1782777600000, "createdAt": 1782777600000}];
+
+function isoToday(){ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+function addDaysIso(iso,n){ const d=new Date(iso+'T00:00:00'); d.setDate(d.getDate()+n); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+function dday(iso){ if(!iso) return null; return Math.round((new Date(iso+'T00:00:00') - new Date(isoToday()+'T00:00:00'))/86400000); }
+function fmtDate(v){ if(!v) return '-'; if(!/^\d{4}-/.test(v)) return v; const [y,m,d]=v.split('-'); return `${y.slice(2)}.${m}.${d}`; }
+function fmtMoney(n, alt){ n=Number(n)||0; if(!n) return alt||'-'; if(n>=1e8){ const v=n/1e8; return (v%1?v.toFixed(1):v)+'억'; } return Math.round(n/1e4).toLocaleString('ko-KR')+'만'; }
+function fmtWonFull(n){ n=Number(n)||0; return n? n.toLocaleString('ko-KR')+'원' : '-'; }
+function uid(p){ return `${p}_${Date.now().toString(36)}${Math.random().toString(36).slice(2,7)}`; }
+function esc(v=''){ return String(v).replace(/[&<>'"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
+function ddayChip(iso){ const n=dday(iso); if(n===null) return ''; if(n<0) return `<span class="dchip red">D+${-n}</span>`; if(n===0) return `<span class="dchip amber">D-DAY</span>`; if(n<=3) return `<span class="dchip amber">D-${n}</span>`; return `<span class="dchip gray">D-${n}</span>`; }
+const $ = id => document.getElementById(id);
+function toast(msg){ const el=$('toast'); el.textContent=msg; el.classList.add('show'); clearTimeout(window.__tt); window.__tt=setTimeout(()=>el.classList.remove('show'),2200); }
+
+function defaultData(){
+  const t = isoToday();
+  return {
+    version: 2,
+    deals: SEED_DEALS.map(d => ({...d})),
+    tasks: [
+      { id:uid('task'), title:'[예시] 효성중공업 V2EL-SDD 2대 납기(6/30) 일정 본사 재확인', due:t, cat:'출고·납품', handTo:'', dealId:'', memo:'납기 6/30까지 — 발주 상태 확인', done:false, handedOver:false, createdAt:Date.now() },
+      { id:uid('task'), title:'[예시] 포스코퓨처엠 얼티엄 잔금 세금계산서 발행 후 경리팀 전달', due:addDaysIso(t,1), cat:'서류', handTo:'경리팀', dealId:'', memo:'', done:false, handedOver:false, createdAt:Date.now() }
+    ],
+    inbox: [],
+    focus: { date:t, items:['','',''] },
+    eod: {},
+    targets: {}
+  };
+}
+function load(){
+  try { if(canStore){ const r=localStorage.getItem(KEY); if(r) return {...defaultData(), ...JSON.parse(r), deals: JSON.parse(r).deals || []}; } } catch(e){}
+  return memStore || defaultData();
+}
+function persist(){
+  state.updatedAt = Date.now();
+  try { if(canStore){ localStorage.setItem(KEY, JSON.stringify(state)); if(typeof schedulePush==='function') schedulePush(); return; } } catch(e){ canStore=false; }
+  memStore = state; $('storageNote').classList.add('show');
+  if(typeof schedulePush==='function') schedulePush();
+}
+let state = load();
+if(!state.targets) state.targets = {};
+if(state.target && !state.targets[new Date().getFullYear()]) state.targets[new Date().getFullYear()] = state.target;
+if(!canStore) $('storageNote').classList.add('show');
+
+/* ═══ 판단 로직 ═══ */
+const isActive = d => ACTIVE.includes(d.status);
+const dealAmt = d => Number(d.wonAmt) || Number(d.amt) || 0;
+const balance = d => (Number(d.wonAmt)||0) - (Number(d.paidAmt)||0);
+const isLate = d => isActive(d) && d.nextDate && dday(d.nextDate) < 0;
+const noNext = d => isActive(d) && !d.next && !d.nextDate;
+const isUnpaid = d => d.status==='수주' && Number(d.wonAmt)>0 && balance(d)>0;
+const fullyDone = t => t.done && (!t.handTo || t.handedOver);
+const taskOverdue = t => !t.done && t.due && dday(t.due)<0;
+
+/* ═══ 내비게이션 ═══ */
+const VIEW_NAMES = { dashboard:'대시보드', deals:'영업 파이프라인', tasks:'업무 추적', daily:'오늘의 정리', settings:'데이터·설정' };
+function goView(view){
+  document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active', v.id===view));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active', b.dataset.view===view));
+  $('viewTitle').textContent = VIEW_NAMES[view];
+  if(window.innerWidth<720) window.scrollTo({top:0,behavior:'smooth'});
+}
+
+/* ═══ 전체 렌더 ═══ */
+let dealFilter = 'active';
+function renderAll(){
+  renderDashboard(); renderDeals(); renderTasks(); renderDaily(); renderDatalists();
+  const att = state.deals.filter(d=>isLate(d)||isUnpaid(d)).length;
+  const od = state.tasks.filter(taskOverdue).length;
+  $('navDealBadge').style.display = att?'':'none'; $('navDealBadge').textContent = att;
+  $('navTaskBadge').style.display = od?'':'none'; $('navTaskBadge').textContent = od;
+  const ib = state.inbox.length;
+  $('navInboxBadge').style.display = ib?'':'none'; $('navInboxBadge').textContent = ib;
+  persist();
+}
+function saveData(msg){ if(msg) toast(msg); renderAll(); }
+
+/* ═══ 올해 목표 달성률 ═══ */
+let targetEditing = false;
+const dealYear = d => Number((d.quoteDate||'').slice(0,4)) || new Date().getFullYear();
+function renderTarget(){
+  const year = new Date().getFullYear();
+  const yearDeals = state.deals.filter(d=>dealYear(d)===year);
+  const doneSum = yearDeals.filter(d=>d.status==='완료').reduce((s,d)=>s+dealAmt(d),0);
+  const wonSum = yearDeals.filter(d=>d.status==='수주').reduce((s,d)=>s+dealAmt(d),0);
+  const t = Number(state.targets[year])||0;
+  if(!t || targetEditing){
+    $('targetPanel').innerHTML = `
+      <p class="eyebrow">${year} TARGET</p>
+      <h2 style="margin:4px 0 12px">${year}년 목표 매출을 입력해 주세요</h2>
+      <div class="target-edit">
+        <input id="targetInput" type="text" inputmode="numeric" placeholder="예: 1500000000 (원 단위)" value="${t||''}" />
+        <span class="amt-hint" id="targetHint"></span>
+        <button class="btn primary" id="targetSaveBtn">목표 저장</button>
+        ${t?'<button class="btn ghost" id="targetCancelBtn">취소</button>':''}
+      </div>
+      <p class="muted" style="margin:10px 0 0">입금 완료 금액 기준으로 달성률을 계산하고, 수주 확보분은 연한 색으로 함께 보여드립니다.</p>`;
+    const inp=$('targetInput');
+    const hint=()=>{ const n=Number(String(inp.value).replace(/[^\d]/g,''))||0; $('targetHint').textContent=n?`${n.toLocaleString('ko-KR')}원 (${fmtMoney(n)})`:''; };
+    inp.addEventListener('input',hint); hint();
+    $('targetSaveBtn').onclick=()=>{ const n=Number(String(inp.value).replace(/[^\d]/g,''))||0; if(!n) return toast('목표 금액을 입력해 주세요.'); state.targets[year]=n; targetEditing=false; saveData(`${year}년 목표를 저장했습니다. 화이팅! 💪`); };
+    const c=$('targetCancelBtn'); if(c) c.onclick=()=>{ targetEditing=false; renderTarget(); };
+    return;
+  }
+  const donePct = Math.min(100, doneSum/t*100);
+  const wonPct = Math.min(100-donePct, wonSum/t*100);
+  const totalPct = Math.min(100, (doneSum+wonSum)/t*100);
+  const start = new Date(year,0,1), end = new Date(year+1,0,1);
+  const pace = Math.min(100, Math.max(0, (Date.now()-start)/(end-start)*100));
+  const remain = Math.max(0, t-doneSum);
+  const ahead = donePct >= pace;
+  $('targetPanel').innerHTML = `
+    <div class="target-head">
+      <div>
+        <p class="eyebrow">${year} TARGET</p>
+        <h2 style="margin:4px 0 0">${year}년 목표 ${fmtWonFull(t)} <button class="mini-btn" id="targetEditBtn" title="목표 수정">✎</button></h2>
+        <p class="muted" style="margin:6px 0 0">${ahead?`연중 진도(${pace.toFixed(0)}%)보다 앞서 있어요. 이 페이스 그대로! 🔥`:`연중 진도는 ${pace.toFixed(0)}% 지점 — 수주 확보분 ${fmtMoney(wonSum,'0원')}이 입금되면 ${totalPct.toFixed(1)}%까지 올라갑니다.`}</p>
+      </div>
+      <div class="pct">${donePct.toFixed(1)}%<small>수주 포함 ${totalPct.toFixed(1)}%</small></div>
+    </div>
+    <div class="target-bar">
+      <div class="tb-fill tb-won" style="width:${(donePct+wonPct).toFixed(2)}%"></div>
+      <div class="tb-fill tb-done" style="width:${donePct.toFixed(2)}%"></div>
+      <div class="tb-pace" style="left:${pace.toFixed(2)}%" data-label="오늘"></div>
+    </div>
+    <div class="target-legend">
+      <span><i style="background:#6d8c75"></i>입금 완료 <b>${fmtMoney(doneSum,'0원')}</b></span>
+      <span><i style="background:#c9dccd"></i>수주 확보(입금 대기) <b>${fmtMoney(wonSum,'0원')}</b></span>
+      <span><i style="background:#e5ddd5"></i>목표까지 <b>${fmtMoney(remain,'달성! 🎉')}</b></span>
+    </div>`;
+  $('targetEditBtn').onclick=()=>{ targetEditing=true; renderTarget(); };
+}
+
+/* ═══ 대시보드 ═══ */
+function renderDashboard(){
+  renderTarget();
+  const open = state.deals.filter(isActive);
+  const pipeSum = open.reduce((s,d)=>s+dealAmt(d),0);
+  const lateDeals = state.deals.filter(isLate);
+  const unpaid = state.deals.filter(isUnpaid);
+  const unpaidSum = unpaid.reduce((s,d)=>s+balance(d),0);
+  const openTasks = state.tasks.filter(t=>!fullyDone(t));
+  const overdueTasks = state.tasks.filter(taskOverdue);
+  const hoWait = state.tasks.filter(t=>t.done && t.handTo && !t.handedOver);
+  const doneDeals = state.deals.filter(d=>d.status==='완료');
+  const doneSum = doneDeals.reduce((s,d)=>s+dealAmt(d),0);
+  const attCount = lateDeals.length + unpaid.length;
+
+  $('metricGrid').innerHTML = [
+    ['진행 중 영업', `${open.length}건`, `파이프라인 ${fmtMoney(pipeSum,'0원')}`, ''],
+    ['확인 필요', `${attCount}건`, `기한 초과 ${lateDeals.length} · 잔금 미수 ${unpaid.length}`, attCount?'warn':''],
+    ['미완료 업무', `${openTasks.length}건`, `기한 초과 ${overdueTasks.length} · 인수인계 대기 ${hoWait.length}`, overdueTasks.length?'warn':''],
+    ['올해 완료', `${doneDeals.length}건`, `입금 완료 ${fmtMoney(doneSum,'0원')}`, '']
+  ].map(m=>`<div class="metric ${m[3]}"><span class="label">${m[0]}</span><strong>${m[1]}</strong><small>${m[2]}</small></div>`).join('');
+
+  const alertCount = attCount + overdueTasks.length;
+  $('alertStrip').classList.toggle('show', alertCount>0);
+  $('alertStrip').innerHTML = alertCount ? `⚠️ 지금 확인이 필요한 항목이 <strong>${alertCount}건</strong> 있습니다. 빨간 표시부터 처리해 주세요.` : '';
+
+  $('pipelineSummary').innerHTML = ['관심','견적','예산','수주','보류','완료'].map(s=>{
+    const ds = state.deals.filter(d=>d.status===s);
+    const sum = ds.reduce((a,d)=>a+dealAmt(d),0);
+    return `<div class="stage-mini" data-stagego="${s}"><strong>${ds.length}</strong><span>${s}</span><small>${sum?fmtMoney(sum):'&nbsp;'}</small></div>`;
+  }).join('');
+
+  const att = [];
+  lateDeals.sort((a,b)=>(a.nextDate||'').localeCompare(b.nextDate||'')).forEach(d=>att.push({lv:'red', t:d.co, s:`다음 행동 기한 초과 (${fmtDate(d.nextDate)}) · ${esc(d.next||'내용 미입력')}`, fn:()=>openDealModal(d.id)}));
+  unpaid.forEach(d=>att.push({lv:'red', t:d.co, s:`잔금 미수 ${fmtWonFull(balance(d))}${d.deliverDate?` · 납품 ${fmtDate(d.deliverDate)}`:''}`, fn:()=>openDealModal(d.id)}));
+  overdueTasks.forEach(t=>att.push({lv:'red', t:t.title, s:`업무 기한 초과 (${fmtDate(t.due)}) · ${t.cat}`, fn:()=>goView('tasks')}));
+  hoWait.forEach(t=>att.push({lv:'amber', t:t.title, s:`완료됨 — ${esc(t.handTo)} 인수인계 대기`, fn:()=>goView('tasks')}));
+  const pinned = [];
+  if(state.inbox.length) pinned.push({lv:'amber', t:`빠른 메모 ${state.inbox.length}건이 정리를 기다립니다`, s:`퇴근 전에 기한을 정해 정식 업무로 바꿔주세요. 눌러서 이동 →`, fn:()=>goView('daily')});
+  const nn = state.deals.filter(noNext);
+  if(nn.length) pinned.push({lv:'amber', t:`다음 행동이 없는 진행 건 ${nn.length}건`, s:`영업 건마다 '다음 행동'을 정해두면 놓치지 않습니다. 눌러서 확인 →`, fn:()=>{dealFilter='nonext'; goView('deals'); renderDeals();}});
+  const cap = Math.max(3, 8 - pinned.length);
+  const shown = att.slice(0, cap).concat(pinned);
+  window.__att = shown.map(a=>a.fn);
+  $('attentionList').innerHTML = shown.length
+    ? shown.map((a,i)=>`<div class="attention-item ${a.lv}" data-att="${i}"><strong>${esc(a.t)}</strong><span>${a.s}</span></div>`).join('') + (att.length>cap?`<div class="empty">외 ${att.length-cap}건 — 영업·업무 화면에서 확인하세요</div>`:'')
+    : `<div class="empty">현재 긴급 경고가 없습니다. 🎉</div>`;
+
+  const todayTasks = state.tasks.filter(t=>!fullyDone(t) && t.due && dday(t.due)<=0).sort((a,b)=>(a.due||'').localeCompare(b.due||''));
+  $('todayTaskList').innerHTML = todayTasks.length ? todayTasks.map(t=>`<div class="list-item" data-taskgo="${t.id}"><strong>${esc(t.title)}</strong><span>${taskOverdue(t)?'⚠️ 기한 초과 · ':''}기한 ${fmtDate(t.due)} · ${t.cat}</span></div>`).join('') : `<div class="empty">오늘 마감 업무가 없습니다.</div>`;
+  const hoAll = state.tasks.filter(t=>t.handTo && !t.handedOver);
+  $('handoffList').innerHTML = hoAll.length ? hoAll.map(t=>`<div class="list-item" data-taskgo="${t.id}"><strong>${esc(t.title)}</strong><span>→ ${esc(t.handTo)}${t.done?' · 업무는 완료됨, 인계만 남음':''}</span></div>`).join('') : `<div class="empty">인수인계 미완료 업무가 없습니다.</div>`;
+}
+
+/* ═══ 영업 파이프라인 ═══ */
+const FILTERS = [['active','진행 중'],['관심','관심'],['견적','견적'],['예산','예산'],['수주','수주'],['보류','보류'],['완료','완료'],['closed','취소·실주'],['warn','⚠ 주의'],['all','전체']];
+function renderDeals(){
+  const q = ($('dealSearch').value||'').trim().toLowerCase();
+  const counts = f => f==='active'?state.deals.filter(isActive).length : f==='closed'?state.deals.filter(d=>['취소','실주'].includes(d.status)).length : f==='warn'?state.deals.filter(d=>isLate(d)||isUnpaid(d)).length : f==='nonext'?state.deals.filter(noNext).length : f==='all'?state.deals.length : state.deals.filter(d=>d.status===f).length;
+  $('statusFilter').innerHTML = FILTERS.map(([k,l])=>`<button class="fbtn ${dealFilter===k?'on':''}" data-dfilter="${k}">${l}<span class="n">${counts(k)}</span></button>`).join('') + (dealFilter==='nonext'?`<button class="fbtn on" data-dfilter="nonext">다음 행동 없음<span class="n">${counts('nonext')}</span></button>`:'');
+
+  let list = state.deals.filter(d=>{
+    if(q && !`${d.co} ${d.model} ${d.app} ${d.route} ${(d.notes||[]).map(n=>n.txt).join(' ')}`.toLowerCase().includes(q)) return false;
+    if(dealFilter==='active') return isActive(d);
+    if(dealFilter==='closed') return ['취소','실주'].includes(d.status);
+    if(dealFilter==='warn') return isLate(d)||isUnpaid(d);
+    if(dealFilter==='nonext') return noNext(d);
+    if(dealFilter==='all') return true;
+    return d.status===dealFilter;
+  });
+  const sort = $('dealSort').value;
+  list.sort((a,b)=>{
+    if(sort==='quote_desc') return (b.quoteDate||'').localeCompare(a.quoteDate||'');
+    if(sort==='quote_asc') return (a.quoteDate||'').localeCompare(b.quoteDate||'');
+    if(sort==='amt_desc') return dealAmt(b)-dealAmt(a);
+    return (a.nextDate||'9999').localeCompare(b.nextDate||'9999');
+  });
+  const sum = list.reduce((s,d)=>s+dealAmt(d),0);
+  $('pipeSum').innerHTML = `표시 <b>${list.length}건</b> · 합계 <b>${fmtMoney(sum,'0원')}</b>`;
+
+  $('pipeBody').innerHTML = list.map(d=>{
+    const amtDisp = d.amt ? fmtMoney(dealAmt(d)) : (d.amtText||'-');
+    return `<tr class="row ${isLate(d)?'late':''}" data-deal="${d.id}">
+      <td><span class="badge b-${d.status}">${d.status}</span></td>
+      <td class="co">${esc(d.co)}<span class="sub">${esc(d.app||'')}${d.app&&d.route?' · ':''}${esc(d.route||'')}</span></td>
+      <td>${esc(d.model||'-')}${d.qty>1?` <span class="sub" style="display:inline">×${d.qty}</span>`:''}</td>
+      <td class="amt">${amtDisp}</td>
+      <td class="dt">${fmtDate(d.quoteDate)}</td>
+      <td class="nx">${d.next||d.nextDate?`<span class="t">${esc(d.next||'-')}</span> ${ddayChip(d.nextDate)}`:`<span class="none">미등록</span>`}</td>
+      <td>${wonProgHtml(d)}</td>
+    </tr>`;
+  }).join('') || `<tr><td colspan="7"><div class="empty">조건에 맞는 영업 건이 없습니다.</div></td></tr>`;
+
+  $('pipeCards').innerHTML = list.map(d=>{
+    const amtDisp = d.amt ? fmtMoney(dealAmt(d)) : (d.amtText||'-');
+    return `<div class="pcard ${isLate(d)?'late':''}" data-deal="${d.id}">
+      <div class="r1"><span class="co">${esc(d.co)}</span><span class="badge b-${d.status}">${d.status}</span></div>
+      <div class="r2"><span>${esc(d.model||'-')}${d.qty>1?` ×${d.qty}`:''}</span><span class="amt">${amtDisp}</span><span>${fmtDate(d.quoteDate)}</span></div>
+      ${d.status==='수주'?`<div class="r2">${wonProgHtml(d)}</div>`:''}
+      ${d.next||d.nextDate?`<div class="nx ${isLate(d)?'late-t':''}">▸ ${esc(d.next||'다음 행동')} ${ddayChip(d.nextDate)}</div>`:''}
+    </div>`;
+  }).join('') || `<div class="empty">조건에 맞는 영업 건이 없습니다.</div>`;
+}
+function wonProgHtml(d){
+  if(d.status==='완료') return `<span class="wp ok">✓ 입금 완료</span>`;
+  if(d.status!=='수주') return '';
+  const bal = balance(d);
+  return `<div class="wonprog">
+    <span class="wp ${d.reportDate?'ok':''}">신고</span>
+    <span class="wp ${d.deliverDate?'ok':''}">납품</span>
+    <span class="wp ${Number(d.wonAmt)>0&&bal<=0?'ok':(bal>0?'bal':'')}">${bal>0?`잔금 ${fmtMoney(bal)}`:'입금'}</span>
+  </div>`;
+}
+
+/* ═══ 영업 건 모달 ═══ */
+let editingDealId = null;
+function renderDatalists(){
+  const set = (id, vals) => $(id).innerHTML = [...new Set(vals.filter(Boolean))].sort().map(v=>`<option value="${esc(v)}">`).join('');
+  set('modelList', state.deals.map(d=>d.model));
+  set('appList', state.deals.map(d=>d.app));
+  set('routeList', state.deals.map(d=>d.route));
+  $('t_deal').innerHTML = '<option value="">연결하지 않음</option>' + state.deals.filter(isActive).map(d=>`<option value="${d.id}">${esc(d.co)} (${d.status})</option>`).join('');
+}
+function numVal(id){ return Number(String($(id).value).replace(/[^\d]/g,''))||0; }
+function balLive(){
+  const b = numVal('d_wonAmt') - numVal('d_paid');
+  $('d_bal').textContent = fmtWonFull(b)||'0원';
+  $('d_bal').className = b>0?'pos':'zero';
+}
+function openDealModal(id){
+  editingDealId = id||null;
+  const d = id ? state.deals.find(x=>x.id===id) : { co:'', quoteDate:isoToday(), model:'', amt:0, amtText:null, qty:1, app:'', status:'관심', route:'', next:'', nextDate:'', notes:[], wonAmt:0, reportDate:'', deliverDate:'', paidAmt:0 };
+  if(!d) return;
+  $('dealDialogTitle').textContent = id ? d.co : '영업 건 추가';
+  $('d_co').value=d.co; $('d_quote').value=d.quoteDate||''; $('d_model').value=d.model||'';
+  $('d_amt').value=d.amt||d.amtText||''; $('d_qty').value=d.qty||1; $('d_app').value=d.app||'';
+  $('d_status').innerHTML = STATUSES.map(s=>`<option ${d.status===s?'selected':''}>${s}</option>`).join('');
+  $('d_route').value=d.route||''; $('d_next').value=d.next||''; $('d_nextDate').value=d.nextDate||'';
+  $('d_wonAmt').value=d.wonAmt||''; $('d_report').value=d.reportDate||'';
+  $('d_deliver').value=/^\d{4}-/.test(d.deliverDate||'')?d.deliverDate:''; $('d_paid').value=d.paidAmt||'';
+  $('d_note').value=''; amtHint(); balLive();
+  $('d_delBtn').style.display = id?'':'none';
+  const notes=(d.notes||[]);
+  $('d_timelineWrap').style.display = notes.length?'':'none';
+  $('d_timeline').innerHTML = [...notes].reverse().map(n=>{
+    const dt=new Date(n.t);
+    return `<div class="tl-item"><div class="t">${dt.getFullYear().toString().slice(2)}.${String(dt.getMonth()+1).padStart(2,'0')}.${String(dt.getDate()).padStart(2,'0')}</div>${esc(n.txt)}</div>`;
+  }).join('');
+  $('dealOverlay').classList.add('on');
+}
+function amtHint(){
+  const n=numVal('d_amt');
+  $('d_amtHint').textContent = n? `${n.toLocaleString('ko-KR')}원 (${fmtMoney(n)})` : '';
+}
+function saveDeal(){
+  const co=$('d_co').value.trim();
+  if(!co) return toast('업체명을 입력해 주세요.');
+  const status=$('d_status').value;
+  const rawAmt=$('d_amt').value.trim();
+  const amtNum=numVal('d_amt');
+  const data={ co, quoteDate:$('d_quote').value, model:$('d_model').value.trim(),
+    amt:amtNum, amtText:(!amtNum&&rawAmt)?rawAmt:null, qty:Number($('d_qty').value)||1,
+    app:$('d_app').value.trim(), status, route:$('d_route').value.trim(),
+    next:$('d_next').value.trim(), nextDate:$('d_nextDate').value,
+    wonAmt:numVal('d_wonAmt'), reportDate:$('d_report').value.trim(),
+    deliverDate:$('d_deliver').value, paidAmt:numVal('d_paid') };
+  const note=$('d_note').value.trim();
+  if(editingDealId){
+    const d=state.deals.find(x=>x.id===editingDealId);
+    if(d.status!==status){ d.notes.push({t:Date.now(), txt:`진행 변경: ${d.status} → ${status}`}); d.statusAt=Date.now(); }
+    Object.assign(d, data);
+    if(note) d.notes.push({t:Date.now(), txt:note});
+    if(status==='완료') toast('🎉 입금까지 완료! 수고 많으셨습니다.');
+  } else {
+    state.deals.push({ id:uid('deal'), ...data, notes:note?[{t:Date.now(),txt:note}]:[], statusAt:Date.now(), createdAt:Date.now() });
+  }
+  $('dealOverlay').classList.remove('on');
+  saveData(editingDealId?'영업 건을 수정했습니다.':'영업 건을 추가했습니다.');
+}
+function deleteDeal(){
+  const d=state.deals.find(x=>x.id===editingDealId);
+  if(confirm(`'${d?.co}' 영업 건을 삭제할까요? 되돌릴 수 없습니다.`)){
+    state.deals=state.deals.filter(x=>x.id!==editingDealId);
+    $('dealOverlay').classList.remove('on');
+    saveData('영업 건을 삭제했습니다.');
+  }
+}
+
+/* ═══ 업무 추적 ═══ */
+let editingTaskId=null;
+function renderTasks(){
+  const q=($('taskSearch').value||'').trim().toLowerCase();
+  const cat=$('taskCatFilter').value;
+  let list=state.tasks.filter(t=>{
+    if(fullyDone(t)) return false;
+    const deal=state.deals.find(d=>d.id===t.dealId);
+    if(q && !`${t.title} ${t.memo} ${t.handTo} ${deal?.co||''}`.toLowerCase().includes(q)) return false;
+    if(cat!=='all' && t.cat!==cat) return false;
+    return true;
+  }).sort((a,b)=>(a.due||'9999').localeCompare(b.due||'9999'));
+  const g={ late:[], today:[], future:[], nodate:[] };
+  list.forEach(t=>{
+    if(taskOverdue(t)) g.late.push(t);
+    else if(t.due && dday(t.due)===0) g.today.push(t);
+    else if(t.due) g.future.push(t);
+    else g.nodate.push(t);
+  });
+  const grp=(cls,icon,name,arr)=> arr.length?`<div class="tgroup ${cls}"><div class="tgroup-hd">${icon} ${name}<span class="n">${arr.length}</span></div>${arr.map(taskHtml).join('')}</div>`:'';
+  const html = grp('late','🔴','기한 초과 — 먼저 처리하세요',g.late) + grp('today','🟡','오늘 마감',g.today) + grp('','🗓','예정된 업무',g.future) + grp('nodate','⚠️','기한 없음 — 미루기의 시작! 기한을 정해주세요',g.nodate);
+  $('taskGroups').innerHTML = html || `<div class="panel"><div class="empty">진행 중인 업무가 없습니다. 상단에서 추가해 보세요.</div></div>`;
+  const done=state.tasks.filter(fullyDone).sort((a,b)=>(b.doneAt||0)-(a.doneAt||0)).slice(0,30);
+  $('doneCount').textContent=`${state.tasks.filter(fullyDone).length}건`;
+  $('taskDoneList').innerHTML = done.length? done.map(taskHtml).join('') : `<div class="empty">아직 없습니다. 오늘의 첫 완료를 만들어 보세요 💪</div>`;
+}
+function taskHtml(t){
+  const deal=state.deals.find(d=>d.id===t.dealId);
+  const od=taskOverdue(t);
+  return `<article class="task-item ${fullyDone(t)?'done':''}">
+    <button class="tk-check ${t.done?'c1':''}" data-tdone="${t.id}" aria-label="완료 처리">${t.done?'✓':''}</button>
+    <div class="tk-body" data-tedit="${t.id}">
+      <div class="tk-title">${esc(t.title)}</div>
+      <div class="tk-meta">
+        ${t.due?`<span class="tk-due ${od?'red':''}">기한 ${fmtDate(t.due)}</span>${ddayChip(t.due)}`:''}
+        <span>${t.cat}</span>
+        ${deal?`<span>연결: ${esc(deal.co)}</span>`:''}
+        ${t.done&&t.handTo&&!t.handedOver?`<span class="dchip amber">인수인계 대기</span>`:''}
+        ${t.postponed?`<span class="postpone-chip ${t.postponed>=2?'hot':''}">⏳ ${t.postponed}번 미룸</span>`:''}
+        ${!t.due&&!t.done?`<button class="setdue-btn" data-setdue="${t.id}|0">기한: 오늘로</button><button class="setdue-btn" data-setdue="${t.id}|1">내일로</button>`:''}
+      </div>
+    </div>
+    ${t.handTo?`<button class="ho-btn ${t.handedOver?'done':''}" data-tho="${t.id}">${t.handedOver?'✓ 인계 완료':`인수인계<br>${esc(t.handTo)}`}</button>`:''}
+    <button class="tk-del" data-tdel="${t.id}">✕</button>
+  </article>`;
+}
+function openTaskModal(id, preset){
+  editingTaskId=id||null;
+  const t=id?state.tasks.find(x=>x.id===id):{title:preset?.title||'', due:isoToday(), cat:'영업', handTo:'', dealId:'', memo:preset?.memo||''};
+  $('taskDialogTitle').textContent=id?'업무 수정':'업무 추가';
+  $('t_title').value=t.title; $('t_due').value=t.due||''; $('t_cat').value=t.cat||'영업';
+  $('t_handTo').value=t.handTo||''; renderDatalists(); $('t_deal').value=t.dealId||''; $('t_memo').value=t.memo||'';
+  $('taskOverlay').classList.add('on');
+}
+function saveTask(){
+  const title=$('t_title').value.trim();
+  if(!title) return toast('업무명을 입력해 주세요.');
+  const data={ title, due:$('t_due').value, cat:$('t_cat').value, handTo:$('t_handTo').value.trim(), dealId:$('t_deal').value, memo:$('t_memo').value.trim() };
+  if(editingTaskId){
+    const old=state.tasks.find(x=>x.id===editingTaskId);
+    if(old.due && data.due && data.due>old.due){ old.postponed=(old.postponed||0)+1; if(old.postponed>=2) toast(`⏳ 이 업무를 ${old.postponed}번째 미루고 있어요. 오늘 15분만 먼저 시작해보면 어떨까요?`); }
+    Object.assign(old, data);
+  }
+  else state.tasks.push({ id:uid('task'), ...data, done:false, handedOver:false, createdAt:Date.now() });
+  if(!editingTaskId && window.__pendingInbox){ state.inbox=state.inbox.filter(i=>i.id!==window.__pendingInbox); window.__pendingInbox=null; }
+  $('taskOverlay').classList.remove('on');
+  saveData(editingTaskId?'업무를 수정했습니다.':'업무를 추가했습니다.');
+}
+
+/* ═══ 오늘의 정리 ═══ */
+function renderDaily(){
+  const t=isoToday();
+  if(!state.focus || state.focus.date!==t) state.focus={date:t, items:['','','']};
+  $('focusItems').innerHTML=[0,1,2].map(i=>`<label class="focus-row"><span>${i+1}</span><input id="focus${i}" value="${esc(state.focus.items[i]||'')}" placeholder="오늘 반드시 끝낼 업무" /></label>`).join('');
+  $('inboxList').innerHTML = state.inbox.length ? state.inbox.slice().reverse().map(item=>`<div class="inbox-item"><div>${esc(item.text)}<small>${new Date(item.createdAt).toLocaleString('ko-KR')}</small></div><div><button class="mini-btn" data-inboxtask="${item.id}">업무화</button> <button class="mini-btn" data-inboxdel="${item.id}">삭제</button></div></div>`).join('') : `<div class="empty">임시 보관된 메모가 없습니다.</div>`;
+  const eod=state.eod?.[t]||{};
+  ['eod1','eod2','eod3','eod4'].forEach(id=>{ $(id).checked=!!eod[id]; });
+  $('eodNote').value=eod.note||'';
+  $('eodDate').textContent=fmtDate(t);
+}
+
+/* ═══ 백업·CSV ═══ */
+function download(name, content, type){
+  const blob=new Blob([content],{type}); const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download=name; a.click(); URL.revokeObjectURL(url);
+}
+function csvCell(v){ return `"${String(v??'').replace(/"/g,'""')}"`; }
+function exportCsv(){
+  const head=['업체명','견적일','모델명','금액','수량','응용','진행사항','경로','비고','수주금액','신고 완료일','납품일','입금액','잔금','완료여부'];
+  const rows=state.deals.map(d=>[
+    d.co, d.quoteDate, d.model, d.amt||d.amtText||'', d.qty, d.app,
+    d.status==='완료'?'수주':(d.status==='취소'?'CANCEL':d.status==='실주'?'LOST':d.status==='보류'?'DELAY':d.status),
+    d.route, (d.notes||[]).map(n=>n.txt).join('\n'),
+    d.wonAmt||'', d.reportDate, d.deliverDate, d.paidAmt||'', Number(d.wonAmt)?balance(d):'', d.status==='완료'?'완료':''
+  ]);
+  download(`영업_진행_상황_${isoToday()}.csv`, '\ufeff'+[head,...rows].map(r=>r.map(csvCell).join(',')).join('\n'), 'text/csv;charset=utf-8');
+  toast('엑셀에서 열 수 있는 CSV를 저장했습니다.');
+}
+
+/* ═══ 이벤트 ═══ */
+function setupStatic(){
+  $('flowEyebrow').textContent=`SALES FLOW · ${new Date().getFullYear()}`;
+  $('todayLabel').textContent=new Intl.DateTimeFormat('ko-KR',{year:'numeric',month:'long',day:'numeric',weekday:'long'}).format(new Date());
+  $('stageGuide').innerHTML=STATUS_GUIDE.map(([s,g])=>`<div class="stage-guide-item"><span class="badge b-${s.split('·')[0]}">${s}</span><span class="muted">${g}</span></div>`).join('');
+}
+function bindEvents(){
+  document.querySelectorAll('.nav-btn').forEach(b=>b.addEventListener('click',()=>goView(b.dataset.view)));
+  $('newDealBtn').onclick=()=>openDealModal(); $('newDealBtn2').onclick=()=>openDealModal();
+  $('quickTaskBtn').onclick=()=>openTaskModal(); $('newTaskBtn').onclick=()=>openTaskModal();
+  $('saveDealBtn').onclick=saveDeal; $('saveTaskBtn').onclick=saveTask; $('d_delBtn').onclick=deleteDeal;
+  $('d_amt').addEventListener('input',amtHint);
+  $('d_wonAmt').addEventListener('input',balLive); $('d_paid').addEventListener('input',balLive);
+  ['dealSearch','dealSort'].forEach(id=>$(id).addEventListener('input',renderDeals));
+  ['taskSearch','taskCatFilter'].forEach(id=>$(id).addEventListener('input',renderTasks));
+  $('qcapInput').addEventListener('keydown',e=>{
+    if(e.key!=='Enter') return;
+    const v=$('qcapInput').value.trim(); if(!v) return;
+    state.inbox.push({id:uid('inbox'),text:v,createdAt:Date.now()});
+    $('qcapInput').value='';
+    saveData('⚡ 임시 보관함에 담았습니다. 퇴근 전에 기한을 정해 업무로 바꿔주세요!');
+  });
+  document.addEventListener('keydown',e=>{
+    if((e.ctrlKey||e.metaKey)&&e.key==='Enter' && !document.querySelector('.overlay.on')){
+      const q=$('qcapInput'); if(q && q.offsetParent){ q.focus(); } else { openTaskModal(); }
+    }
+  });
+  $('inboxSaveBtn').onclick=()=>{ const v=$('inboxText').value.trim(); if(!v) return; state.inbox.push({id:uid('inbox'),text:v,createdAt:Date.now()}); $('inboxText').value=''; saveData('빠른 메모에 보관했습니다.'); };
+  $('saveFocusBtn').onclick=()=>{ state.focus={date:isoToday(), items:[0,1,2].map(i=>$(`focus${i}`).value.trim())}; saveData('오늘의 집중 업무를 저장했습니다.'); };
+  $('saveEodBtn').onclick=()=>{ state.eod[isoToday()]={eod1:$('eod1').checked,eod2:$('eod2').checked,eod3:$('eod3').checked,eod4:$('eod4').checked,note:$('eodNote').value.trim(),savedAt:Date.now()}; saveData('퇴근 전 마감 기록을 저장했습니다.'); };
+  $('exportBtn').onclick=()=>{ download(`업무흐름_백업_${isoToday()}.json`, JSON.stringify(state,null,2), 'application/json'); toast('백업 파일을 만들었습니다.'); };
+  $('importInput').addEventListener('change',e=>{
+    const f=e.target.files[0]; if(!f) return;
+    const r=new FileReader();
+    r.onload=()=>{ try{ const d=JSON.parse(r.result); if(!d.deals||!d.tasks) throw 0; state={...defaultData(),...d}; saveData('백업 데이터를 복원했습니다.'); }catch{ alert('올바른 백업 파일이 아닙니다.'); } e.target.value=''; };
+    r.readAsText(f);
+  });
+  $('exportCsvBtn').onclick=exportCsv;
+  $('resetBtn').onclick=()=>{ if(confirm('정말 모든 데이터를 초기화할까요?')&&confirm('마지막 확인입니다. 되돌릴 수 없습니다!')){ state=defaultData(); state.deals=[]; saveData('초기화했습니다.'); } };
+
+  document.addEventListener('click',e=>{
+    const el=e.target.closest('[data-close],[data-go],[data-deal],[data-dfilter],[data-att],[data-taskgo],[data-stagego],[data-tdone],[data-tho],[data-tdel],[data-tedit],[data-inboxtask],[data-inboxdel],[data-duechip],[data-setdue]');
+    if(!el) return;
+    const ds=el.dataset;
+    if(ds.close){ $(ds.close).classList.remove('on'); return; }
+    if(ds.go){ goView(ds.go); return; }
+    if(ds.dfilter){ dealFilter=ds.dfilter; renderDeals(); return; }
+    if(ds.deal){ openDealModal(ds.deal); return; }
+    if(ds.att!==undefined){ window.__att[ds.att]?.(); return; }
+    if(ds.stagego){ dealFilter=ds.stagego; goView('deals'); renderDeals(); return; }
+    if(ds.taskgo){ goView('tasks'); return; }
+    if(ds.tdone){ const t=state.tasks.find(x=>x.id===ds.tdone); t.done=!t.done; t.doneAt=t.done?Date.now():null;
+      if(t.done&&t.handTo&&!t.handedOver) toast(`✅ 완료! ${t.handTo}께 인수인계 후 [인계 완료]를 눌러주세요.`); saveData(); return; }
+    if(ds.tho){ const t=state.tasks.find(x=>x.id===ds.tho); t.handedOver=!t.handedOver; if(t.handedOver&&!t.done){t.done=true;t.doneAt=Date.now();} saveData(t.handedOver?'인수인계까지 완료되었습니다.':''); return; }
+    if(ds.tdel){ const t=state.tasks.find(x=>x.id===ds.tdel); if(confirm(`'${t?.title}' 업무를 삭제할까요?`)){ state.tasks=state.tasks.filter(x=>x.id!==ds.tdel); saveData('업무를 삭제했습니다.'); } return; }
+    if(ds.tedit){ openTaskModal(ds.tedit); return; }
+    if(ds.inboxtask){ const it=state.inbox.find(i=>i.id===ds.inboxtask); if(!it) return; window.__pendingInbox=it.id; openTaskModal(null,{title:it.text, memo:'빠른 메모에서 전환됨'}); return; }
+    if(ds.inboxdel){ state.inbox=state.inbox.filter(i=>i.id!==ds.inboxdel); saveData('메모를 삭제했습니다.'); return; }
+    if(ds.duechip!==undefined){
+      const t=isoToday(); let v;
+      if(ds.duechip==='fri'){ const d=new Date(); const add=(5-d.getDay()+7)%7; v=addDaysIso(t,add===0?0:add); }
+      else if(ds.duechip==='mon'){ const d=new Date(); const add=((1-d.getDay()+7)%7)||7; v=addDaysIso(t,add); }
+      else v=addDaysIso(t,Number(ds.duechip));
+      $('t_due').value=v;
+      document.querySelectorAll('.due-chip').forEach(c=>c.classList.toggle('on',c===el));
+      return;
+    }
+    if(ds.setdue){
+      const [id,n]=ds.setdue.split('|');
+      const t=state.tasks.find(x=>x.id===id); if(!t) return;
+      t.due=addDaysIso(isoToday(),Number(n));
+      saveData(`기한을 ${Number(n)===0?'오늘':'내일'}로 지정했습니다. 미루지 않기! 💪`);
+      return;
+    }
+  });
+  document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{ if(e.target===o) o.classList.remove('on'); }));
+}
+
+/* ═══ 기기 간 동기화 (Supabase) ═══ */
+const SYNC_CFG_KEY='workflow-sync-cfg';
+let syncCfg=null;
+try{ syncCfg=JSON.parse(localStorage.getItem(SYNC_CFG_KEY)||'null'); }catch(e){}
+let pushTimer=null;
+function setSyncStatus(msg, cls){ const el=$('syncStatus'); if(!el) return; el.textContent=msg; el.className='sync-status '+(cls||''); }
+function syncHeaders(){ return { 'apikey':syncCfg.key, 'Authorization':'Bearer '+syncCfg.key, 'Content-Type':'application/json' }; }
+async function pullRemote(silent){
+  if(!syncCfg) return;
+  try{
+    setSyncStatus('☁️ 서버에서 가져오는 중…');
+    const r=await fetch(`${syncCfg.url}/rest/v1/workflow_sync?id=eq.1&select=updated_at,data`,{headers:syncHeaders()});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const rows=await r.json();
+    if(rows.length && rows[0].data && Number(rows[0].updated_at)>(Number(state.updatedAt)||0)){
+      state={...defaultData(), ...rows[0].data};
+      if(!state.targets) state.targets={};
+      renderAll();
+      if(!silent) toast('☁️ 다른 기기의 최신 데이터를 가져왔습니다.');
+    }
+    setSyncStatus('✓ 연결됨 · 마지막 확인 '+new Date().toLocaleTimeString('ko-KR'),'ok');
+  }catch(e){
+    setSyncStatus('✕ 연결 실패 — URL/키 또는 인터넷 연결을 확인해 주세요','err');
+    if(!silent) toast('동기화 서버에 연결하지 못했습니다.');
+  }
+}
+async function pushRemote(){
+  if(!syncCfg) return;
+  try{
+    const r=await fetch(`${syncCfg.url}/rest/v1/workflow_sync`,{
+      method:'POST',
+      headers:{...syncHeaders(),'Prefer':'resolution=merge-duplicates'},
+      body:JSON.stringify([{id:1, updated_at:Number(state.updatedAt)||Date.now(), data:state}])
+    });
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    setSyncStatus('✓ 연결됨 · 마지막 저장 '+new Date().toLocaleTimeString('ko-KR'),'ok');
+  }catch(e){ setSyncStatus('✕ 서버 저장 실패 — 인터넷 연결을 확인해 주세요','err'); }
+}
+function schedulePush(){ if(!syncCfg) return; clearTimeout(pushTimer); pushTimer=setTimeout(pushRemote,1500); }
+function bindSync(){
+  if(syncCfg){ $('syncUrl').value=syncCfg.url; $('syncKey').value=syncCfg.key; }
+  $('syncSaveBtn').onclick=()=>{
+    const url=$('syncUrl').value.trim().replace(/\/+$/,''), key=$('syncKey').value.trim();
+    if(!url||!key) return toast('URL과 API Key를 모두 입력해 주세요.');
+    syncCfg={url,key};
+    try{ localStorage.setItem(SYNC_CFG_KEY, JSON.stringify(syncCfg)); }catch(e){}
+    toast('동기화 설정을 저장했습니다. 연결을 확인합니다…');
+    pullRemote().then(()=>pushRemote());
+  };
+  $('syncPullBtn').onclick=()=>syncCfg?pullRemote():toast('먼저 연결 정보를 저장해 주세요.');
+  $('syncPushBtn').onclick=()=>syncCfg?(pushRemote(),toast('서버로 보냈습니다.')):toast('먼저 연결 정보를 저장해 주세요.');
+}
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden && syncCfg) pullRemote(true); });
+setInterval(()=>{ if(syncCfg && !document.hidden) pullRemote(true); }, 90000);
+
+setupStatic(); bindEvents(); bindSync(); renderAll();
+if(syncCfg) pullRemote(true);
+if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./service-worker.js').catch(()=>{});
+</script>
+</body>
+</html>
