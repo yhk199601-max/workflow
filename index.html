@@ -274,6 +274,22 @@ td.nx .none { color: #c2b8ae; font-size: 11px; }
   .modal-box { border-radius: 20px 20px 0 0; }
   .pipeline-summary { grid-template-columns: repeat(3, 1fr); }
 }
+.btn.big { padding: 14px 24px; font-size: 15px; border-radius: 13px; box-shadow: 0 6px 16px rgba(120,91,81,.25); }
+.top-actions .btn { padding: 12px 19px; font-size: 14px; }
+.picker-wrap { position: relative; }
+.picker-wrap input { padding-right: 34px; }
+.picker-clear { position: absolute; right: 8px; top: 34px; border: 0; background: var(--panel-2); border-radius: 8px; width: 24px; height: 24px; font-size: 13px; color: var(--muted); display: none; }
+.picker-list { position: absolute; left: 0; right: 0; top: 100%; margin-top: 4px; background: #fff; border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 14px 40px rgba(72,57,48,.16); max-height: 230px; overflow-y: auto; z-index: 30; display: none; }
+.picker-list.show { display: block; }
+.picker-item { padding: 10px 13px; cursor: pointer; display: flex; gap: 8px; align-items: center; font-size: 13px; border-bottom: 1px solid #f2ede7; }
+.picker-item:last-child { border-bottom: 0; }
+.picker-item:hover { background: #faf6f2; }
+.picker-item .pm { color: var(--muted); font-size: 11px; margin-left: auto; }
+.picker-empty { padding: 14px; text-align: center; color: var(--muted); font-size: 12px; }
+.repeat-chip { font-family: var(--mono); font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 999px; background: var(--blue-soft); color: var(--blue); }
+.mfab { display: none; position: fixed; right: 16px; bottom: 84px; width: 58px; height: 58px; border-radius: 50%; background: var(--primary); color: #fff; font-size: 28px; font-weight: 700; border: 0; box-shadow: 0 10px 26px rgba(120,91,81,.45); z-index: 80; }
+.mfab:active { transform: scale(.94); }
+@media (max-width: 720px) { .mfab { display: grid; place-items: center; } }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 </style>
 </head>
@@ -392,7 +408,7 @@ td.nx .none { color: #c2b8ae; font-size: 11px; }
           <option value="amt_desc">금액 높은순</option>
           <option value="next_asc">다음 행동 임박순</option>
         </select>
-        <button class="btn primary" id="newDealBtn2">+ 영업 건 추가</button>
+        <button class="btn primary big" id="newDealBtn2">＋ 영업 건 추가</button>
       </div>
       <div class="sfilter" id="statusFilter"></div>
       <div class="pipe-sum" id="pipeSum"></div>
@@ -413,7 +429,7 @@ td.nx .none { color: #c2b8ae; font-size: 11px; }
           <option value="all">전체 유형</option>
           <option>영업</option><option>서류</option><option>출고·납품</option><option>고객 대응</option><option>사내 업무</option><option>기타</option>
         </select>
-        <button class="btn primary" id="newTaskBtn">+ 업무 추가</button>
+        <button class="btn primary big" id="newTaskBtn">＋ 업무 추가</button>
       </div>
       <div class="task-layout">
         <div>
@@ -581,8 +597,18 @@ td.nx .none { color: #c2b8ae; font-size: 11px; }
         </span>
       </label>
       <label>유형<select id="t_cat"><option>영업</option><option>서류</option><option>출고·납품</option><option>고객 대응</option><option>사내 업무</option><option>기타</option></select></label>
+      <label>반복<select id="t_repeat">
+        <option value="none">반복 안 함</option>
+        <option value="daily">매일</option>
+        <option value="weekly">매주</option>
+        <option value="monthly">매월</option>
+        <option value="yearly">매년</option>
+      </select></label>
       <label>인수인계 대상 (필요 시)<input id="t_handTo" placeholder="예: 서비스팀 이대리님" /></label>
-      <label>연결 영업 건<select id="t_deal"></select></label>
+      <label class="picker-wrap">연결 영업 건<input id="t_dealSearch" placeholder="업체명 입력해 검색" autocomplete="off" />
+        <button class="picker-clear" id="t_dealClear" type="button">✕</button>
+        <div class="picker-list" id="t_dealList"></div>
+      </label>
       <label class="span-2">메모<textarea id="t_memo" rows="3" placeholder="요청 사항, 회신 내용, 확인할 포인트"></textarea></label>
     </div>
     <div class="modal-actions">
@@ -592,6 +618,7 @@ td.nx .none { color: #c2b8ae; font-size: 11px; }
   </div>
 </div>
 
+<button class="mfab" id="mfab" aria-label="추가">＋</button>
 <div id="toast" class="toast"></div>
 <script>
 /* ═══ 저장소 ═══ */
@@ -615,6 +642,27 @@ const SEED_DEALS = [{"id": "x1_0", "co": "메리테크", "quoteDate": "2025-09-2
 
 function isoToday(){ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
 function addDaysIso(iso,n){ const d=new Date(iso+'T00:00:00'); d.setDate(d.getDate()+n); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+function addMonthsIso(iso,n){
+  const [y,m,d]=iso.split('-').map(Number);
+  const nd=new Date(y, m-1+n, 1);
+  const last=new Date(nd.getFullYear(), nd.getMonth()+1, 0).getDate();
+  nd.setDate(Math.min(d,last));
+  return `${nd.getFullYear()}-${String(nd.getMonth()+1).padStart(2,'0')}-${String(nd.getDate()).padStart(2,'0')}`;
+}
+const REPEAT_LABEL={daily:'매일',weekly:'매주',monthly:'매월',yearly:'매년'};
+function nextDue(due,repeat){
+  const base=due||isoToday();
+  let nd = repeat==='daily'?addDaysIso(base,1) : repeat==='weekly'?addDaysIso(base,7) : repeat==='monthly'?addMonthsIso(base,1) : addMonthsIso(base,12);
+  while(nd<isoToday()) nd = repeat==='daily'?addDaysIso(nd,1) : repeat==='weekly'?addDaysIso(nd,7) : repeat==='monthly'?addMonthsIso(nd,1) : addMonthsIso(nd,12);
+  return nd;
+}
+function maybeSpawnRepeat(t){
+  if(!t.repeat || t.repeat==='none' || t.nextSpawned || !fullyDone(t)) return;
+  t.nextSpawned=true;
+  const nd=nextDue(t.due,t.repeat);
+  state.tasks.push({ id:uid('task'), title:t.title, due:nd, cat:t.cat, handTo:t.handTo, dealId:t.dealId, memo:t.memo, repeat:t.repeat, nextSpawned:false, done:false, handedOver:false, postponed:0, createdAt:Date.now() });
+  toast(`🔁 다음 반복 업무를 ${fmtDate(nd)}에 등록했어요.`);
+}
 function dday(iso){ if(!iso) return null; return Math.round((new Date(iso+'T00:00:00') - new Date(isoToday()+'T00:00:00'))/86400000); }
 function fmtDate(v){ if(!v) return '-'; if(!/^\d{4}-/.test(v)) return v; const [y,m,d]=v.split('-'); return `${y.slice(2)}.${m}.${d}`; }
 function fmtMoney(n, alt){ n=Number(n)||0; if(!n) return alt||'-'; if(n>=1e8){ const v=n/1e8; return (v%1?v.toFixed(1):v)+'억'; } return Math.round(n/1e4).toLocaleString('ko-KR')+'만'; }
@@ -867,7 +915,28 @@ function renderDatalists(){
   set('modelList', state.deals.map(d=>d.model));
   set('appList', state.deals.map(d=>d.app));
   set('routeList', state.deals.map(d=>d.route));
-  $('t_deal').innerHTML = '<option value="">연결하지 않음</option>' + state.deals.filter(isActive).map(d=>`<option value="${d.id}">${esc(d.co)} (${d.status})</option>`).join('');
+}
+let pickerDealId = '';
+function pickerCandidates(q){
+  const pool = state.deals.filter(d=>!['취소','실주'].includes(d.status));
+  const rank = d => (isActive(d)?0:1);
+  let list = q ? pool.filter(d=>`${d.co} ${d.model} ${d.app}`.toLowerCase().includes(q)) : pool;
+  return list.sort((a,b)=>rank(a)-rank(b) || (b.quoteDate||'').localeCompare(a.quoteDate||'')).slice(0,8);
+}
+function setPickerDeal(id){
+  pickerDealId = id||'';
+  const d = state.deals.find(x=>x.id===id);
+  $('t_dealSearch').value = d ? d.co : '';
+  $('t_dealClear').style.display = d ? 'block' : 'none';
+  $('t_dealList').classList.remove('show');
+}
+function renderPickerList(){
+  const q = $('t_dealSearch').value.trim().toLowerCase();
+  const list = pickerCandidates(q);
+  $('t_dealList').innerHTML = list.length
+    ? list.map(d=>`<div class="picker-item" data-pickdeal="${d.id}"><span class="badge b-${d.status}">${d.status}</span><b>${esc(d.co)}</b><span class="pm">${esc(d.model||'')}</span></div>`).join('')
+    : `<div class="picker-empty">검색 결과가 없습니다.</div>`;
+  $('t_dealList').classList.add('show');
 }
 function numVal(id){ return Number(String($(id).value).replace(/[^\d]/g,''))||0; }
 function balLive(){
@@ -972,6 +1041,7 @@ function taskHtml(t){
         <span>${t.cat}</span>
         ${deal?`<span>연결: ${esc(deal.co)}</span>`:''}
         ${t.done&&t.handTo&&!t.handedOver?`<span class="dchip amber">인수인계 대기</span>`:''}
+        ${t.repeat&&t.repeat!=='none'?`<span class="repeat-chip">🔁 ${REPEAT_LABEL[t.repeat]}</span>`:''}
         ${t.postponed?`<span class="postpone-chip ${t.postponed>=2?'hot':''}">⏳ ${t.postponed}번 미룸</span>`:''}
         ${!t.due&&!t.done?`<button class="setdue-btn" data-setdue="${t.id}|0">기한: 오늘로</button><button class="setdue-btn" data-setdue="${t.id}|1">내일로</button>`:''}
       </div>
@@ -985,15 +1055,16 @@ function openTaskModal(id, preset){
   const t=id?state.tasks.find(x=>x.id===id):{title:preset?.title||'', due:isoToday(), cat:'영업', handTo:'', dealId:'', memo:preset?.memo||''};
   $('taskDialogTitle').textContent=id?'업무 수정':'업무 추가';
   $('t_title').value=t.title; $('t_due').value=t.due||''; $('t_cat').value=t.cat||'영업';
-  $('t_handTo').value=t.handTo||''; renderDatalists(); $('t_deal').value=t.dealId||''; $('t_memo').value=t.memo||'';
+  $('t_handTo').value=t.handTo||''; $('t_repeat').value=t.repeat||'none'; setPickerDeal(t.dealId||''); $('t_memo').value=t.memo||'';
   $('taskOverlay').classList.add('on');
 }
 function saveTask(){
   const title=$('t_title').value.trim();
   if(!title) return toast('업무명을 입력해 주세요.');
-  const data={ title, due:$('t_due').value, cat:$('t_cat').value, handTo:$('t_handTo').value.trim(), dealId:$('t_deal').value, memo:$('t_memo').value.trim() };
+  const data={ title, due:$('t_due').value, cat:$('t_cat').value, handTo:$('t_handTo').value.trim(), dealId:pickerDealId, memo:$('t_memo').value.trim(), repeat:$('t_repeat').value };
   if(editingTaskId){
     const old=state.tasks.find(x=>x.id===editingTaskId);
+    if(old.repeat!==data.repeat) old.nextSpawned=false;
     if(old.due && data.due && data.due>old.due){ old.postponed=(old.postponed||0)+1; if(old.postponed>=2) toast(`⏳ 이 업무를 ${old.postponed}번째 미루고 있어요. 오늘 15분만 먼저 시작해보면 어떨까요?`); }
     Object.assign(old, data);
   }
@@ -1060,6 +1131,11 @@ function bindEvents(){
       const q=$('qcapInput'); if(q && q.offsetParent){ q.focus(); } else { openTaskModal(); }
     }
   });
+  $('t_dealSearch').addEventListener('input',()=>{ pickerDealId=''; $('t_dealClear').style.display='none'; renderPickerList(); });
+  $('t_dealSearch').addEventListener('focus',renderPickerList);
+  $('t_dealClear').onclick=()=>setPickerDeal('');
+  document.addEventListener('click',e=>{ if(!e.target.closest('.picker-wrap')) $('t_dealList')?.classList.remove('show'); });
+  $('mfab').onclick=()=>{ document.getElementById('deals').classList.contains('active') ? openDealModal() : openTaskModal(); };
   $('inboxSaveBtn').onclick=()=>{ const v=$('inboxText').value.trim(); if(!v) return; state.inbox.push({id:uid('inbox'),text:v,createdAt:Date.now()}); $('inboxText').value=''; saveData('빠른 메모에 보관했습니다.'); };
   $('saveFocusBtn').onclick=()=>{ state.focus={date:isoToday(), items:[0,1,2].map(i=>$(`focus${i}`).value.trim())}; saveData('오늘의 집중 업무를 저장했습니다.'); };
   $('saveEodBtn').onclick=()=>{ state.eod[isoToday()]={eod1:$('eod1').checked,eod2:$('eod2').checked,eod3:$('eod3').checked,eod4:$('eod4').checked,note:$('eodNote').value.trim(),savedAt:Date.now()}; saveData('퇴근 전 마감 기록을 저장했습니다.'); };
@@ -1074,7 +1150,7 @@ function bindEvents(){
   $('resetBtn').onclick=()=>{ if(confirm('정말 모든 데이터를 초기화할까요?')&&confirm('마지막 확인입니다. 되돌릴 수 없습니다!')){ state=defaultData(); state.deals=[]; saveData('초기화했습니다.'); } };
 
   document.addEventListener('click',e=>{
-    const el=e.target.closest('[data-close],[data-go],[data-deal],[data-dfilter],[data-att],[data-taskgo],[data-stagego],[data-tdone],[data-tho],[data-tdel],[data-tedit],[data-inboxtask],[data-inboxdel],[data-duechip],[data-setdue]');
+    const el=e.target.closest('[data-close],[data-go],[data-deal],[data-dfilter],[data-att],[data-taskgo],[data-stagego],[data-tdone],[data-tho],[data-tdel],[data-tedit],[data-inboxtask],[data-inboxdel],[data-duechip],[data-setdue],[data-pickdeal]');
     if(!el) return;
     const ds=el.dataset;
     if(ds.close){ $(ds.close).classList.remove('on'); return; }
@@ -1085,8 +1161,10 @@ function bindEvents(){
     if(ds.stagego){ dealFilter=ds.stagego; goView('deals'); renderDeals(); return; }
     if(ds.taskgo){ goView('tasks'); return; }
     if(ds.tdone){ const t=state.tasks.find(x=>x.id===ds.tdone); t.done=!t.done; t.doneAt=t.done?Date.now():null;
-      if(t.done&&t.handTo&&!t.handedOver) toast(`✅ 완료! ${t.handTo}께 인수인계 후 [인계 완료]를 눌러주세요.`); saveData(); return; }
-    if(ds.tho){ const t=state.tasks.find(x=>x.id===ds.tho); t.handedOver=!t.handedOver; if(t.handedOver&&!t.done){t.done=true;t.doneAt=Date.now();} saveData(t.handedOver?'인수인계까지 완료되었습니다.':''); return; }
+      if(t.done&&t.handTo&&!t.handedOver) toast(`✅ 완료! ${t.handTo}께 인수인계 후 [인계 완료]를 눌러주세요.`);
+      maybeSpawnRepeat(t); saveData(); return; }
+    if(ds.tho){ const t=state.tasks.find(x=>x.id===ds.tho); t.handedOver=!t.handedOver; if(t.handedOver&&!t.done){t.done=true;t.doneAt=Date.now();}
+      maybeSpawnRepeat(t); saveData(t.handedOver?'인수인계까지 완료되었습니다.':''); return; }
     if(ds.tdel){ const t=state.tasks.find(x=>x.id===ds.tdel); if(confirm(`'${t?.title}' 업무를 삭제할까요?`)){ state.tasks=state.tasks.filter(x=>x.id!==ds.tdel); saveData('업무를 삭제했습니다.'); } return; }
     if(ds.tedit){ openTaskModal(ds.tedit); return; }
     if(ds.inboxtask){ const it=state.inbox.find(i=>i.id===ds.inboxtask); if(!it) return; window.__pendingInbox=it.id; openTaskModal(null,{title:it.text, memo:'빠른 메모에서 전환됨'}); return; }
@@ -1100,6 +1178,7 @@ function bindEvents(){
       document.querySelectorAll('.due-chip').forEach(c=>c.classList.toggle('on',c===el));
       return;
     }
+    if(ds.pickdeal){ setPickerDeal(ds.pickdeal); return; }
     if(ds.setdue){
       const [id,n]=ds.setdue.split('|');
       const t=state.tasks.find(x=>x.id===id); if(!t) return;
