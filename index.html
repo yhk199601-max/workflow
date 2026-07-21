@@ -617,6 +617,15 @@ td.co .sub { font-size: 12px; }
           <li>Settings → API에서 URL과 anon key 복사 → 위에 붙여넣기</li>
         </ol>
       </article>
+      <article class="panel" style="margin-top:18px">
+        <p class="eyebrow">EXCHANGE RATE</p><h2>환율 (USD → KRW)</h2>
+        <p class="muted">USD 거래 건을 원화로 환산해 목표·파이프라인 합계에 반영합니다. 인터넷 연결 시 하루 한 번 자동 갱신되고, 직접 수정할 수도 있어요.</p>
+        <div style="display:flex;gap:9px;margin-top:14px;flex-wrap:wrap;align-items:center">
+          <input id="fxInput" type="text" inputmode="numeric" style="max-width:160px" />
+          <button class="btn secondary" id="fxSaveBtn">환율 저장</button>
+          <span class="muted" id="fxStatus"></span>
+        </div>
+      </article>
       <article class="panel danger-zone">
         <p class="eyebrow">RESET</p><h2>초기화</h2>
         <p class="muted">모든 내용을 삭제합니다. 먼저 백업을 권장합니다.</p>
@@ -635,7 +644,7 @@ td.co .sub { font-size: 12px; }
       <label>견적일<input id="d_quote" type="date" /></label>
       <div class="f3wrap">
         <label>모델명<input id="d_model" list="modelList" placeholder="V2EL-SDD, XGT-9000 등" /></label>
-        <label>금액 (원)<input id="d_amt" type="text" inputmode="numeric" placeholder="45000000" /><span class="amt-hint" id="d_amtHint"></span></label>
+        <label>금액<div style="display:flex;gap:7px"><select id="d_cur" style="width:76px;flex-shrink:0"><option value="KRW">₩</option><option value="USD">$</option></select><input id="d_amt" type="text" inputmode="numeric" placeholder="45000000" /></div><span class="amt-hint" id="d_amtHint"></span></label>
         <label>수량<input id="d_qty" type="number" min="1" value="1" /></label>
       </div>
       <div class="f3wrap">
@@ -650,11 +659,11 @@ td.co .sub { font-size: 12px; }
       <legend>수주 관리 · 신고 → 납품 → 입금</legend>
       <div class="form-grid">
         <div class="f3wrap">
-          <label>수주금액 (원)<input id="d_wonAmt" type="text" inputmode="numeric" /></label>
+          <label>수주금액<input id="d_wonAmt" type="text" inputmode="numeric" /></label>
           <label>신고 완료일<input id="d_report" placeholder="25.03.11 / 면제 등" /></label>
           <label>납품일<input id="d_deliver" type="date" /></label>
         </div>
-        <label>입금액 (원)<input id="d_paid" type="text" inputmode="numeric" /></label>
+        <label>입금액<input id="d_paid" type="text" inputmode="numeric" /></label>
         <div class="bal-line">잔금 <b id="d_bal">-</b></div>
       </div>
     </fieldset>
@@ -784,7 +793,8 @@ function defaultData(){
     inbox: [],
     focus: { date:t, items:['','',''] },
     eod: {},
-    targets: {}
+    targets: {},
+    fxRate: 1400, fxAt: 0
   };
 }
 function load(){
@@ -801,6 +811,14 @@ function touchSync(){
 }
 let state = load();
 if(!state.targets) state.targets = {};
+if(!state.fxRate) state.fxRate = 1400;
+state.deals.forEach(d=>{
+  if(!d.currency) d.currency='KRW';
+  if(d.amtText){
+    const m=String(d.amtText).match(/USD[\s]*([\d,\.]+)/i);
+    if(m){ d.currency='USD'; d.amt=Number(m[1].replace(/[,]/g,''))||0; d.amtText=null; }
+  }
+});
 if(state.target && !state.targets[new Date().getFullYear()]) state.targets[new Date().getFullYear()] = state.target;
 if(!canStore) $('storageNote').classList.add('show');
 
@@ -842,8 +860,12 @@ function touchCell(d){
   const dstr=`${String(dt.getFullYear()).slice(2)}.${String(dt.getMonth()+1).padStart(2,'0')}.${String(dt.getDate()).padStart(2,'0')}`;
   return `<span style="color:${color};font-weight:700">${a.label}</span> <span style="color:var(--muted);font-size:10px">${dstr}</span>`;
 }
-const dealAmt = d => Number(d.wonAmt) || Number(d.amt) || 0;
+const fx = () => Number(state.fxRate)||1400;
+const isUSD = d => d.currency==='USD';
+const dealAmt = d => { const raw = Number(d.wonAmt) || Number(d.amt) || 0; return isUSD(d) ? Math.round(raw*fx()) : raw; };
 const balance = d => (Number(d.wonAmt)||0) - (Number(d.paidAmt)||0);
+const fmtUsd = n => '$'+Number(n).toLocaleString('en-US');
+function fmtBal(d){ const b=balance(d); return isUSD(d) ? `${fmtUsd(b)} (≈${fmtMoney(Math.round(b*fx()))})` : fmtWonFull(b); }
 const isLate = d => isActive(d) && d.nextDate && dday(d.nextDate) < 0;
 const noNext = d => isActive(d) && !d.next && !d.nextDate;
 const isUnpaid = d => d.status==='수주' && Number(d.wonAmt)>0 && balance(d)>0;
@@ -975,7 +997,7 @@ function renderDashboard(){
 
   const att = [];
   lateDeals.sort((a,b)=>(a.nextDate||'').localeCompare(b.nextDate||'')).forEach(d=>att.push({lv:'red', ic:'alert', t:d.co, s:`다음 행동 기한 초과 (${fmtDate(d.nextDate)}) · ${esc(d.next||'내용 미입력')}`, fn:()=>openDealModal(d.id)}));
-  unpaid.forEach(d=>att.push({lv:'red', ic:'won', t:d.co, s:`잔금 미수 <b style="color:var(--red)">${fmtWonFull(balance(d))}</b>${d.deliverDate?` · 납품 ${fmtDate(d.deliverDate)}`:''}`, fn:()=>openDealModal(d.id)}));
+  unpaid.forEach(d=>att.push({lv:'red', ic:'won', t:d.co, s:`잔금 미수 <b style="color:var(--red)">${fmtBal(d)}</b>${d.deliverDate?` · 납품 ${fmtDate(d.deliverDate)}`:''}`, fn:()=>openDealModal(d.id)}));
   overdueTasks.forEach(t=>att.push({lv:'red', ic:'clock', t:t.title, s:`업무 기한 초과 (${fmtDate(t.due)}) · ${t.cat}`, fn:()=>goView('tasks')}));
   hoWait.forEach(t=>att.push({lv:'amber', ic:'hand', t:t.title, s:`완료됨 — ${esc(t.handTo)} 인수인계 대기`, fn:()=>goView('tasks')}));
   const pinned = [];
@@ -1026,7 +1048,7 @@ function renderDeals(){
   $('pipeSum').innerHTML = `표시 <b>${list.length}건</b> · 합계 <b>${fmtMoney(sum,'0원')}</b>`;
 
   $('pipeBody').innerHTML = list.map(d=>{
-    const amtDisp = d.amt ? fmtMoney(dealAmt(d)) : (d.amtText||'-');
+    const amtDisp = isUSD(d)&&d.amt ? `${fmtUsd(Number(d.wonAmt)||d.amt)}<div style="font-size:10px;color:var(--muted);font-weight:500">≈ ${fmtMoney(dealAmt(d))}</div>` : (d.amt||d.wonAmt ? fmtMoney(dealAmt(d)) : (d.amtText||'-'));
     return `<tr class="row ${isLate(d)?'late':''}" data-deal="${d.id}">
       <td><span class="badge b-${d.status}">${d.status}</span></td>
       <td class="co">${esc(d.co)}<span class="sub">${esc(d.app||'')}${d.app&&d.route?' · ':''}${esc(d.route||'')}</span></td>
@@ -1040,7 +1062,7 @@ function renderDeals(){
   }).join('') || `<tr><td colspan="8"><div class="empty">조건에 맞는 영업 건이 없습니다.</div></td></tr>`;
 
   $('pipeCards').innerHTML = list.map(d=>{
-    const amtDisp = d.amt ? fmtMoney(dealAmt(d)) : (d.amtText||'-');
+    const amtDisp = isUSD(d)&&d.amt ? `${fmtUsd(Number(d.wonAmt)||d.amt)} <span style="font-size:10px;color:var(--muted)">≈${fmtMoney(dealAmt(d))}</span>` : (d.amt||d.wonAmt ? fmtMoney(dealAmt(d)) : (d.amtText||'-'));
     return `<div class="pcard ${isLate(d)?'late':''}" data-deal="${d.id}">
       <div class="r1"><span class="co">${esc(d.co)}</span><span class="badge b-${d.status}">${d.status}</span></div>
       <div class="r2"><span>${esc(d.model||'-')}${d.qty>1?` ×${d.qty}`:''}</span><span class="amt">${amtDisp}</span><span>${fmtDate(d.quoteDate)}</span><span>기록 ${touchCell(d)}</span></div>
@@ -1056,7 +1078,7 @@ function wonProgHtml(d){
   return `<div class="wonprog">
     <span class="wp ${d.reportDate?'ok':''}">신고</span>
     <span class="wp ${d.deliverDate?'ok':''}">납품</span>
-    <span class="wp ${Number(d.wonAmt)>0&&bal<=0?'ok':(bal>0?'bal':'')}">${bal>0?`잔금 ${fmtMoney(bal)}`:'입금'}</span>
+    <span class="wp ${Number(d.wonAmt)>0&&bal<=0?'ok':(bal>0?'bal':'')}">${bal>0?`잔금 ${isUSD(d)?fmtUsd(bal):fmtMoney(bal)}`:'입금'}</span>
   </div>`;
 }
 
@@ -1094,7 +1116,8 @@ function numVal(id){ return Number(String($(id).value).replace(/[^\d]/g,''))||0;
 function balLive(){
   const won = numVal('d_wonAmt');
   const b = won - numVal('d_paid');
-  $('d_bal').textContent = won ? b.toLocaleString('ko-KR')+'원' : '-';
+  if(!won){ $('d_bal').textContent='-'; $('d_bal').className=''; return; }
+  $('d_bal').textContent = $('d_cur').value==='USD' ? `${fmtUsd(b)} (≈ ${Math.round(b*fx()).toLocaleString('ko-KR')}원)` : b.toLocaleString('ko-KR')+'원';
   $('d_bal').className = b>0?'pos':'zero';
 }
 function openDealModal(id){
@@ -1103,6 +1126,7 @@ function openDealModal(id){
   if(!d) return;
   $('dealDialogTitle').textContent = id ? d.co : '영업 건 추가';
   $('d_co').value=d.co; $('d_quote').value=d.quoteDate||''; $('d_model').value=d.model||'';
+  $('d_cur').value=d.currency||'KRW';
   $('d_amt').value=d.amt||d.amtText||''; $('d_qty').value=d.qty||1; $('d_app').value=d.app||'';
   $('d_status').innerHTML = STATUSES.map(s=>`<option ${d.status===s?'selected':''}>${s}</option>`).join('');
   $('d_route').value=d.route||''; $('d_next').value=d.next||''; $('d_nextDate').value=d.nextDate||'';
@@ -1120,7 +1144,12 @@ function openDealModal(id){
 }
 function amtHint(){
   const n=numVal('d_amt');
-  $('d_amtHint').textContent = n? `${n.toLocaleString('ko-KR')}원 (${fmtMoney(n)})` : '';
+  if(!n){ $('d_amtHint').textContent=''; return; }
+  if($('d_cur').value==='USD'){
+    $('d_amtHint').textContent = `${fmtUsd(n)} ≈ ${Math.round(n*fx()).toLocaleString('ko-KR')}원 (환율 ${fx().toLocaleString()})`;
+  } else {
+    $('d_amtHint').textContent = `${n.toLocaleString('ko-KR')}원 (${fmtMoney(n)})`;
+  }
 }
 function saveDeal(){
   const co=$('d_co').value.trim();
@@ -1128,7 +1157,7 @@ function saveDeal(){
   const status=$('d_status').value;
   const rawAmt=$('d_amt').value.trim();
   const amtNum=numVal('d_amt');
-  const data={ co, quoteDate:$('d_quote').value, model:$('d_model').value.trim(),
+  const data={ co, quoteDate:$('d_quote').value, model:$('d_model').value.trim(), currency:$('d_cur').value,
     amt:amtNum, amtText:(!amtNum&&rawAmt)?rawAmt:null, qty:Number($('d_qty').value)||1,
     app:$('d_app').value.trim(), status, route:$('d_route').value.trim(),
     next:$('d_next').value.trim(), nextDate:$('d_nextDate').value,
@@ -1294,11 +1323,12 @@ function download(name, content, type){
 function csvCell(v){ return `"${String(v??'').replace(/"/g,'""')}"`; }
 function exportCsv(){
   const head=['업체명','견적일','모델명','금액','수량','응용','진행사항','경로','비고','수주금액','신고 완료일','납품일','입금액','잔금','완료여부'];
+  const csvMoney=(d,v)=> v ? (isUSD(d)?`USD ${Number(v).toLocaleString('en-US')}`:v) : '';
   const rows=state.deals.map(d=>[
-    d.co, d.quoteDate, d.model, d.amt||d.amtText||'', d.qty, d.app,
+    d.co, d.quoteDate, d.model, csvMoney(d,d.amt)||d.amtText||'', d.qty, d.app,
     d.status==='완료'?'수주':(d.status==='취소'?'CANCEL':d.status==='실주'?'LOST':d.status==='보류'?'DELAY':d.status),
     d.route, (d.notes||[]).map(n=>n.txt).join('\n'),
-    d.wonAmt||'', d.reportDate, d.deliverDate, d.paidAmt||'', Number(d.wonAmt)?balance(d):'', d.status==='완료'?'완료':''
+    csvMoney(d,d.wonAmt), d.reportDate, d.deliverDate, csvMoney(d,d.paidAmt), Number(d.wonAmt)?csvMoney(d,balance(d))||balance(d):'', d.status==='완료'?'완료':''
   ]);
   download(`영업_진행_상황_${isoToday()}.csv`, '\ufeff'+[head,...rows].map(r=>r.map(csvCell).join(',')).join('\n'), 'text/csv;charset=utf-8');
   toast('엑셀에서 열 수 있는 CSV를 저장했습니다.');
@@ -1318,6 +1348,7 @@ function bindEvents(){
   $('quickTaskBtn').onclick=()=>openTaskModal(); $('newTaskBtn').onclick=()=>openTaskModal();
   $('saveDealBtn').onclick=saveDeal; $('saveTaskBtn').onclick=saveTask; $('d_delBtn').onclick=deleteDeal;
   $('d_amt').addEventListener('input',amtHint);
+  $('d_cur').addEventListener('change',()=>{ amtHint(); balLive(); });
   $('d_wonAmt').addEventListener('input',balLive); $('d_paid').addEventListener('input',balLive);
   ['dealSearch','dealSort'].forEach(id=>$(id).addEventListener('input',renderDeals));
   ['taskSearch','taskCatFilter'].forEach(id=>$(id).addEventListener('input',renderTasks));
@@ -1436,7 +1467,29 @@ async function pushRemote(){
   }catch(e){ setSyncStatus('✕ 서버 저장 실패 — 인터넷 연결을 확인해 주세요','err'); }
 }
 function schedulePush(){ if(!syncCfg) return; clearTimeout(pushTimer); pushTimer=setTimeout(pushRemote,1500); }
+function updFxUI(){
+  if(!$('fxInput')) return;
+  $('fxInput').value = fx();
+  $('fxStatus').textContent = state.fxAt ? `1달러 = ${fx().toLocaleString()}원 · ${new Date(state.fxAt).toLocaleDateString('ko-KR')} 갱신` : `1달러 = ${fx().toLocaleString()}원 (기본값)`;
+}
+async function fetchFx(){
+  try{
+    if(state.fxAt && Date.now()-state.fxAt < 12*3600*1000){ updFxUI(); return; }
+    const r=await fetch('https://open.er-api.com/v6/latest/USD');
+    const j=await r.json();
+    const k=Math.round(Number(j?.rates?.KRW));
+    if(k>500 && k<5000){ state.fxRate=k; state.fxAt=Date.now(); persist(); renderAll(); }
+  }catch(e){}
+  updFxUI();
+}
 function bindSync(){
+  $('fxSaveBtn').onclick=()=>{
+    const v=Number(String($('fxInput').value).replace(/[^\d]/g,''))||0;
+    if(v<500||v>5000) return toast('환율을 확인해 주세요 (500~5000 사이).');
+    state.fxRate=v; state.fxAt=Date.now();
+    saveData(`환율을 1달러 = ${v.toLocaleString()}원으로 저장했습니다.`);
+    updFxUI();
+  };
   if(syncCfg){ $('syncUrl').value=syncCfg.url; $('syncKey').value=syncCfg.key; }
   $('syncSaveBtn').onclick=()=>{
     const url=$('syncUrl').value.trim().replace(/\/+$/,''), key=$('syncKey').value.trim();
@@ -1458,6 +1511,7 @@ function runAutoComplete(){
   if(n){ touchSync(); renderAll(); toast(`🎉 신고·납품·입금이 끝난 ${n}건을 완료 탭으로 이동했습니다.`); }
 }
 if(syncCfg) pullRemote(true).then(runAutoComplete); else runAutoComplete();
+updFxUI(); fetchFx();
 if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./service-worker.js').catch(()=>{});
 </script>
 </body>
